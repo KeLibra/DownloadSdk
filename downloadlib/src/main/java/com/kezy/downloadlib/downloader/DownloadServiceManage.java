@@ -86,11 +86,6 @@ public class DownloadServiceManage implements IDownloadEngine {
     }
 
     @Override
-    public long getTaskId() {
-        return -1;
-    }
-
-    @Override
     public void startDownload(Context context, String url) {
         goDownloadApk();
     }
@@ -139,14 +134,6 @@ public class DownloadServiceManage implements IDownloadEngine {
         if (mDownloadService != null) {
             DownloadUtils.installApk(mContext, mDownloadService.getDownloadSavePath(mInfo.url));
         }
-    }
-
-    @Override
-    public String getDownloadFile(Context context) {
-        if (mDownloadService == null) {
-            return mInfo.path;
-        }
-        return mDownloadService.getDownloadSavePath(mInfo.url);
     }
 
     @Override

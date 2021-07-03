@@ -11,9 +11,6 @@ public interface IDownloadEngine {
 
     void bindStatusListener(IDownloadStatusListener listener);
 
-    // 下载任务id
-    long getTaskId();
-
     // 开始下载
     void startDownload(Context context, String url);
 
@@ -27,9 +24,6 @@ public interface IDownloadEngine {
     void deleteDownload(Context context, String url);
 
     void installApk(Context context, String url);
-
-    // 获取下载文件路径
-    String getDownloadFile(Context context);
 
     void destroy();
 }

@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
 
         ITaskImpl task = TaskManager.getInstance().createDownloadTask(MainActivity.this,
                 new DownloadInfo
-                        .Builder(url_113MB, 0)
+                        .Builder(url_35MB, 0)
                         .build());
 
         btnApi = findViewById(R.id.btn_api);
