@@ -2,20 +2,16 @@ package com.kezy.downloadlib.impls;
 
 import android.content.Context;
 
-import com.kezy.downloadlib.task.DownloadInfo;
-
+import com.kezy.downloadlib.DownloadInfo;
 
 /**
  * @Author Kezy
  * @Time 2021/6/22
  * @Description
  */
-public interface TaskImpl {
+public interface ITaskImpl {
 
     DownloadInfo getInfo();
-
-    // 下载器类型
-    int getDownloadType();
 
     // 下载的key
     String createDownloadKey();
@@ -32,7 +28,7 @@ public interface TaskImpl {
 
     int getStatus();
 
-    void subscribe(BaseObserver observer);
+    void addTaskListener(IDownloadTaskListener listener);
 
     void openApp(Context context);
 }

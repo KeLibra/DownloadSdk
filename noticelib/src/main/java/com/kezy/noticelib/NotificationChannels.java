@@ -34,7 +34,8 @@ public class NotificationChannels {
                 context.getString(R.string.channel_media),
                 NotificationManager.IMPORTANCE_DEFAULT);
         mediaChannel.setSound(null,null);
-        mediaChannel.setVibrationPattern(null);
+        mediaChannel.setVibrationPattern(new long[0]);
+        mediaChannel.enableVibration(false);
 
         nm.createNotificationChannels(Arrays.asList(
                 new NotificationChannel(
@@ -53,7 +54,6 @@ public class NotificationChannels {
                         LOW,
                         context.getString(R.string.channel_low),
                         NotificationManager.IMPORTANCE_MIN),
-                //custom notification channel
                 mediaChannel
         ));
     }

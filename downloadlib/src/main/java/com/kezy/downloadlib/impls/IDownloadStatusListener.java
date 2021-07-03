@@ -5,7 +5,7 @@ package com.kezy.downloadlib.impls;
  * @Time 2021/6/29
  * @Description
  */
-public interface IStatusObserver {
+public interface IDownloadStatusListener {
 
     void onStart(String onlyKey, boolean isRestart, long totalSize);
     void onPause(String onlyKey);

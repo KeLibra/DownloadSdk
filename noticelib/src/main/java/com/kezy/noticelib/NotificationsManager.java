@@ -75,7 +75,7 @@ public class NotificationsManager {
 
     public void sendProgressViewNotification(Context context,NotificationManager nm, int progress, long taskId) {
         //创建通知
-        @SuppressLint({"NewApi", "LocalSuppress"}) Notification.Builder nb = new Notification.Builder(context, NotificationChannels.IMPORTANCE)
+        @SuppressLint({"NewApi", "LocalSuppress"}) Notification.Builder nb = new Notification.Builder(context, NotificationChannels.DEFAULT)
                 //设置通知左侧的小图标
                 .setSmallIcon(R.mipmap.ic_reply)
                 //设置通知标题
@@ -85,6 +85,7 @@ public class NotificationsManager {
                 //设置显示通知时间
                 .setShowWhen(true)
                 .setAutoCancel(true)
+                .setDefaults(Notification.FLAG_ONLY_ALERT_ONCE)
                 //设置点击通知时的响应事件
 //                .setContentIntent(pi)
                 .setProgress(100,progress,false);

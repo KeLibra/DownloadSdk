@@ -2,21 +2,14 @@ package com.kezy.downloadlib.impls;
 
 import android.content.Context;
 
-
 /**
  * @Author Kezy
  * @Time 2021/6/21
  * @Description task 接口
  */
-public interface EngineImpl {
+public interface IDownloadEngine {
 
-    class DownloadType {
-        public static int TYPE_API = 100; // api下载
-        public static int TYPE_XIMA = 101; // 喜马下载
-    }
-
-    void subscribe(IStatusObserver observer);
-
+    void bindStatusListener(IDownloadStatusListener listener);
 
     // 下载任务id
     long getTaskId();

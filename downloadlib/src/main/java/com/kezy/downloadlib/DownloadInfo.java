@@ -1,12 +1,8 @@
-package com.kezy.downloadlib.task;
+package com.kezy.downloadlib;
 
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.TextUtils;
-import android.util.Log;
-
-
-import com.kezy.downloadlib.impls.EngineImpl;
 
 import java.io.File;
 
@@ -28,11 +24,6 @@ public class DownloadInfo implements Parcelable {
         int INSTALLED = 7;   // 已安装
     }
 
-    public interface DownloadTpye{
-        int XIMA = EngineImpl.DownloadType.TYPE_XIMA;
-        int API = EngineImpl.DownloadType.TYPE_API;
-    }
-
     // 自动生成的信息
     public long timeId; // time戳
     public int status;
@@ -43,7 +34,6 @@ public class DownloadInfo implements Parcelable {
     public String name; // apk name
     public String desc; // apk desc
     public String icon; // apk icon url
-    public int downloadType; // 下载器类型
 
     public String packageName; // 包名
 
@@ -74,7 +64,6 @@ public class DownloadInfo implements Parcelable {
         this.name = builder.name;
         this.desc = builder.desc;
         this.icon = builder.icon;
-        this.downloadType = builder.downloadType;
     }
 
     // apk 下载的关键信息
@@ -85,7 +74,6 @@ public class DownloadInfo implements Parcelable {
         private String name; // apk name
         private String desc; // apk desc
         private String icon; // apk icon url
-        private int downloadType; // 下载器类型
 
 
         public Builder(String url, long adId) {
@@ -107,10 +95,6 @@ public class DownloadInfo implements Parcelable {
             this.icon = icon;
             return this;
         }
-        public Builder setDownloaderType(int downloadType) {
-            this.downloadType = downloadType;
-            return this;
-        }
 
         public DownloadInfo build(){
             return new DownloadInfo(this);
@@ -129,8 +113,7 @@ public class DownloadInfo implements Parcelable {
 
 
     public String onlyKey() {
-        Log.e("--------msg", " -----get only key =  " + url + "_" + adId + "_" + downloadType);
-        return url + "_" + adId + "_" + downloadType;
+        return url + "_" + adId;
     }
 
     @Override
@@ -166,7 +149,6 @@ public class DownloadInfo implements Parcelable {
                 ", isRunning=" + isRunning +
                 ", totalSize=" + totalSize +
                 ", tempSize=" + tempSize +
-                ", downloadType=" + downloadType +
                 '}';
     }
 
@@ -185,7 +167,6 @@ public class DownloadInfo implements Parcelable {
         dest.writeString(this.name);
         dest.writeString(this.desc);
         dest.writeString(this.icon);
-        dest.writeInt(this.downloadType);
         dest.writeString(this.path);
         dest.writeInt(this.progress);
         dest.writeLong(this.taskId);
@@ -204,7 +185,6 @@ public class DownloadInfo implements Parcelable {
         this.name = source.readString();
         this.desc = source.readString();
         this.icon = source.readString();
-        this.downloadType = source.readInt();
         this.path = source.readString();
         this.progress = source.readInt();
         this.taskId = source.readLong();
@@ -223,7 +203,6 @@ public class DownloadInfo implements Parcelable {
         this.name = in.readString();
         this.desc = in.readString();
         this.icon = in.readString();
-        this.downloadType = in.readInt();
         this.path = in.readString();
         this.progress = in.readInt();
         this.taskId = in.readLong();

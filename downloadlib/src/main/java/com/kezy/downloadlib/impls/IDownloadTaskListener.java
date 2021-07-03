@@ -5,7 +5,7 @@ package com.kezy.downloadlib.impls;
  * @Time 2021/7/1
  * @Description
  */
-public interface ITaskObserver {
+public interface IDownloadTaskListener {
 
     void onStart(String onlyKey, boolean isRestart);
     void onPause(String onlyKey);
@@ -16,5 +16,4 @@ public interface ITaskObserver {
     void onSuccess(String onlyKey);
     void onInstallBegin(String onlyKey);
     void onInstallSuccess(String onlyKey);
-
 }

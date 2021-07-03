@@ -2,4 +2,31 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.kezy.downloadlib">
 
+
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+
+
+    <application>
+        <provider
+            android:name=".provider.DownloadFileProvider"
+            android:authorities="${applicationId}.fileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/ad_api_download_file_path" />
+        </provider>
+
+        <service android:name=".downloader.DownloadService" />
+
+
+    </application>
+
 </manifest>
