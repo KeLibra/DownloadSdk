@@ -10,7 +10,7 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.kezy.downloadlib.DownloadInfo;
+import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
@@ -40,7 +40,6 @@ public class DownloadServiceManage implements IDownloadEngine {
     private DownloadInfo mInfo;
 
     private IDownloadStatusListener mListener;
-
 
     public DownloadServiceManage(Context context) {
         if (context != null) {
@@ -142,6 +141,7 @@ public class DownloadServiceManage implements IDownloadEngine {
             mDownloadService.removeAllListener();
             mDownloadService.unbindService(mConn);
         }
+        unBindDownloadService(mContext);
     }
 
 
@@ -182,15 +182,6 @@ public class DownloadServiceManage implements IDownloadEngine {
         return true;
     }
 
-    public int getStatueByUrl(String url) {
-
-        if (mDownloadService != null) {
-            return mDownloadService.getStatueByUrl(url);
-        }
-
-        return DownloadInfo.Status.WAITING;
-    }
-
     @Nullable
     public String getDownloadSavePath(String url) {
 
@@ -198,7 +189,7 @@ public class DownloadServiceManage implements IDownloadEngine {
             return mDownloadService.getDownloadSavePath(url);
         }
 
-        return null;
+        return mInfo.path;
     }
 
     public boolean isDowning(String url) {
@@ -206,7 +197,7 @@ public class DownloadServiceManage implements IDownloadEngine {
         if (mDownloadService != null) {
             return mDownloadService.isDowning(url);
         }
-        return false;
+        return mInfo.status == DownloadInfo.Status.DOWNLOADING;
     }
 
 

@@ -2,7 +2,7 @@ package com.kezy.downloadlib.impls;
 
 import android.content.Context;
 
-import com.kezy.downloadlib.DownloadInfo;
+import com.kezy.downloadlib.bean.DownloadInfo;
 
 /**
  * @Author Kezy

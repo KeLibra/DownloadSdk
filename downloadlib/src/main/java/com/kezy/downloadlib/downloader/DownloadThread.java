@@ -9,9 +9,8 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.kezy.downloadlib.DownloadInfo;
+import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.DownloadUtils;
-import com.kezy.downloadlib.downloader.DownloadService;
 
 import java.io.BufferedInputStream;
 import java.io.File;

@@ -1,6 +1,5 @@
 package com.kezy.downloadlib.downloader;
 
-import android.app.NotificationManager;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
@@ -14,10 +13,9 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 
-import com.kezy.downloadlib.DownloadInfo;
+import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
-import com.kezy.noticelib.NotificationsManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,8 +44,6 @@ public class DownloadService extends Service {
      * @Fields mDownloadTaskList : 正在下载的任务
      */
     private List<DownloadInfo> mDownloadTaskList = new ArrayList<>();
-
-    private NotificationManager mNotifyManager;
 
     public void setDownloadInfo(DownloadInfo info) {
         if (!mDownloadTaskList.contains(info)) {
@@ -101,7 +97,6 @@ public class DownloadService extends Service {
     public void onCreate() {
         super.onCreate();
         Log.e("---------msg", " --------- onCreate");
-        mNotifyManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mBinder = new Binder();
         mHandler = new UpdateHandler(this);
     }
@@ -268,14 +263,13 @@ public class DownloadService extends Service {
                 getDownloadInfoByUrl(task.url).progress = task.progress;
                 getDownloadInfoByUrl(task.url).totalSize = task.totalSize;
                 getDownloadInfoByUrl(task.url).tempSize = task.tempSize;
-
             }
+
             switch (msg.what) {
                 case DOWN_OK:
                     Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + task.url);
                     // 下载完成，点击安装
                     Log.e("----------msg", " ------- 下载完成22 ----fileName   " + task.path);
-                    NotificationsManager.getInstance().clearNotificationById(mNotifyManager, (int) task.timeId);
                     DownloadUtils.installApk(mContext, task.path);
                     handleDownloadSuccess(getDownloadInfoByUrl(task.url));
                     handleInstallBegin(getDownloadInfoByUrl(task.url));
@@ -291,7 +285,6 @@ public class DownloadService extends Service {
                     break;
                 case DOWNLOAD_ING:
                     Log.e("----------msg", " ------- ing ----   " + task.progress);
-                    NotificationsManager.getInstance().sendProgressViewNotification(mContext, mNotifyManager, task.progress, task.timeId);
                     handleProgress(getDownloadInfoByUrl(task.url));
                     break;
                 case REQUEST_TIME_OUT:

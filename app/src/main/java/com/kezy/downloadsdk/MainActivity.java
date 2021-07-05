@@ -11,7 +11,7 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.kezy.downloadlib.DownloadInfo;
+import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadTaskListener;
 import com.kezy.downloadlib.impls.ITaskImpl;
