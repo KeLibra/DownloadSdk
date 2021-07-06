@@ -15,7 +15,7 @@ import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadTaskListener;
 import com.kezy.downloadlib.impls.ITaskImpl;
-import com.kezy.downloadlib.task.TaskManager;
+import com.kezy.downloadlib.task.DownloadTaskManager;
 import com.kezy.noticelib.NotificationChannels;
 
 public class MainActivity extends AppCompatActivity {
@@ -41,11 +41,8 @@ public class MainActivity extends AppCompatActivity {
 
         NotificationChannels.createAllNotificationChannels(MainActivity.this);
 
-//        DownloadTask task = new DownloadTask(new DownloadServiceManage(MainActivity.this), new DownloadInfo(url_35MB));
-//        DownloadTask task1 = new DownloadTask(new DownloadServiceManage(MainActivity.this), new DownloadInfo(url_113MB));
 
-
-        ITaskImpl task = TaskManager.getInstance().createDownloadTask(MainActivity.this,
+        ITaskImpl task = DownloadTaskManager.getInstance().createDownloadTask(MainActivity.this,
                 new DownloadInfo
                         .Builder(url_35MB, 0)
                         .build());
@@ -162,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        TaskManager.getInstance().destroy();
+        DownloadTaskManager.getInstance().destroy();
     }
 
 

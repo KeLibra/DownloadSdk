@@ -18,28 +18,25 @@ import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 
-
 /**
- *
+ * 下载实现类
  */
-public class DownloadServiceManage implements IDownloadEngine {
+public class DownloadEngineManager implements IDownloadEngine {
 
     private static final String TAG = "--------msg_d_m";
     private boolean mConnected = false;
 
     private Context mContext;
-
-    private String onlyKey;
-
     @Nullable
     private DownloadService mDownloadService;
 
-
-    public UpdateHandler mHandler;
+    private Map<String, DownloadRunnable> onlyKeyRunnableMap = new HashMap<>();
 
     private List<IDownloadStatusListener> mDownloadServiceStatueListeners = new CopyOnWriteArrayList<>();
 
@@ -55,8 +52,7 @@ public class DownloadServiceManage implements IDownloadEngine {
         }
     }
 
-    public DownloadServiceManage(Context context) {
-        mHandler = new UpdateHandler(context);
+    public DownloadEngineManager(Context context) {
         if (context != null) {
             mContext = context.getApplicationContext();
             init(mContext);
@@ -79,26 +75,84 @@ public class DownloadServiceManage implements IDownloadEngine {
         }
     }
 
-    DownloadRunnable downloadRunnable;
+
 
     @Override
     public void startDownload(Context context,String downloadUrl, String onlyKey) {
         if (!checkConnectionStatus(context)) {
             return;
         }
-        this.onlyKey = onlyKey;
+
         if (mDownloadService == null || mDownloadService.threadPool == null) {
             return;
         }
-        if (downloadRunnable == null) {
-            downloadRunnable = new DownloadRunnable(context, downloadUrl, mHandler);
-            downloadRunnable.isRunning = true;
+        if (!onlyKeyRunnableMap.containsKey(onlyKey)) {
+            DownloadRunnable runnable = new DownloadRunnable(context, downloadUrl, new StatusChangeHandler(onlyKey));
+            runnable.isRunning = true;
+            runnable.downloadStatus = DownloadInfo.Status.STARTED;
+            onlyKeyRunnableMap.put(onlyKey, runnable);
+
         } else {
-            downloadRunnable.isRunning = true;
-            downloadRunnable.downloadStatus = DownloadInfo.Status.DOWNLOADING;
+            onlyKeyRunnableMap.get(onlyKey).isRunning = true;
+            onlyKeyRunnableMap.get(onlyKey).downloadStatus = DownloadInfo.Status.DOWNLOADING;
         }
 
-        mDownloadService.threadPool.submit(downloadRunnable);
+        mDownloadService.threadPool.submit(onlyKeyRunnableMap.get(onlyKey));
+    }
+
+    @Override
+    public void startDownloadWithPath(Context context, String url, String onlyKey, String path) {
+        if (!checkConnectionStatus(context)) {
+            return;
+        }
+        if (mDownloadService == null || mDownloadService.threadPool == null) {
+            return;
+        }
+
+        if (!onlyKeyRunnableMap.containsKey(onlyKey)) {
+            DownloadRunnable runnable = new DownloadRunnable(context, url,  new StatusChangeHandler(onlyKey));
+            runnable.savePath = path;
+            onlyKeyRunnableMap.put(onlyKey, runnable);
+        }
+
+        mDownloadService.threadPool.submit(onlyKeyRunnableMap.get(onlyKey));
+    }
+
+    @Override
+    public void startDownloadWithName(Context context, String url, String onlyKey, String name) {
+        if (!checkConnectionStatus(context)) {
+            return;
+        }
+        if (mDownloadService == null || mDownloadService.threadPool == null) {
+            return;
+        }
+
+        if (!onlyKeyRunnableMap.containsKey(onlyKey)) {
+            DownloadRunnable runnable = new DownloadRunnable(context, url,  new StatusChangeHandler(onlyKey));
+            runnable.name = name;
+            onlyKeyRunnableMap.put(onlyKey, runnable);
+        }
+
+        mDownloadService.threadPool.submit(onlyKeyRunnableMap.get(onlyKey));
+    }
+
+    @Override
+    public void startDownloadWithNameAndPath(Context context, String url, String onlyKey, String name, String path) {
+        if (!checkConnectionStatus(context)) {
+            return;
+        }
+        if (mDownloadService == null || mDownloadService.threadPool == null) {
+            return;
+        }
+
+        if (!onlyKeyRunnableMap.containsKey(onlyKey)) {
+            DownloadRunnable runnable = new DownloadRunnable(context, url,  new StatusChangeHandler(onlyKey));
+            runnable.name = name;
+            runnable.savePath = path;
+            onlyKeyRunnableMap.put(onlyKey, runnable);
+        }
+        mDownloadService.threadPool.submit(onlyKeyRunnableMap.get(onlyKey));
+
     }
 
     @Override
@@ -106,10 +160,8 @@ public class DownloadServiceManage implements IDownloadEngine {
         if (!checkConnectionStatus(context)) {
             return;
         }
-        Log.e("--------msg", " ------------ pauseDownload  111111111 ----------- " + downloadRunnable.isRunning);
-        downloadRunnable.isRunning = false;
-        downloadRunnable.downloadStatus = DownloadInfo.Status.STOPPED;
-        Log.e("--------msg", " ------------ pauseDownload  222222222 ----------- " + downloadRunnable.isRunning);
+        onlyKeyRunnableMap.get(onlyKey).isRunning = false;
+        onlyKeyRunnableMap.get(onlyKey).downloadStatus = DownloadInfo.Status.STOPPED;
     }
 
     @Override
@@ -121,14 +173,14 @@ public class DownloadServiceManage implements IDownloadEngine {
     @Override
     public void deleteDownload(Context context, String onlyKey) {
 
-        downloadRunnable.downloadStatus = DownloadInfo.Status.DELETE;
-        downloadRunnable.isRunning = false;
-        String filePath = downloadRunnable.savePath;
+        onlyKeyRunnableMap.get(onlyKey).downloadStatus = DownloadInfo.Status.DELETE;
+        onlyKeyRunnableMap.get(onlyKey).isRunning = false;
+        String filePath = onlyKeyRunnableMap.get(onlyKey).savePath;
         if (filePath != null && new File(filePath).exists()) {
             new File(filePath).delete();
         }
-        File tempDownloadPath = DownloadUtils.getTempDownloadPath(downloadRunnable.savePath, downloadRunnable.name);
-        if (tempDownloadPath != null && tempDownloadPath.exists()) {
+        File tempDownloadPath = DownloadUtils.getTempDownloadPath(onlyKeyRunnableMap.get(onlyKey).savePath, onlyKeyRunnableMap.get(onlyKey).name);
+        if (tempDownloadPath.exists()) {
             tempDownloadPath.delete();
         }
     }
@@ -181,8 +233,6 @@ public class DownloadServiceManage implements IDownloadEngine {
 
 
 
-
-
     public static final int DOWN_OK = 1001;
     public static final int DOWN_ERROR = 1002;
     public static final int DOWN_START = 1003;
@@ -191,50 +241,49 @@ public class DownloadServiceManage implements IDownloadEngine {
     public static final int HANDLER_PAUSE = 1006;
     public static final int HANDLER_REMOVE = 1007;
 
-    public class UpdateHandler extends Handler {
+    public class StatusChangeHandler extends Handler {
 
-        private Context mContext;
-        public UpdateHandler(Context context) {
-            mContext = context;
+        private String mOnlyKey;
+
+        public StatusChangeHandler(String onlyKey) {
+            this.mOnlyKey = onlyKey;
         }
-
         @Override
         public void handleMessage(@NonNull Message msg) {
             Log.i("-------------msg", " ------- handleMessage : " + msg.toString());
 
-
             switch (msg.what) {
                 case DOWN_OK:
-                    Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + downloadRunnable);
+                    Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + onlyKeyRunnableMap.get(mOnlyKey));
                     // 下载完成，点击安装
-                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + downloadRunnable.savePath);
-                    handleDownloadSuccess();
-                    handleInstallBegin();
+                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + onlyKeyRunnableMap.get(mOnlyKey).savePath);
+                    handleDownloadSuccess(mOnlyKey, onlyKeyRunnableMap.get(mOnlyKey).savePath, onlyKeyRunnableMap.get(mOnlyKey).name);
+                    handleInstallBegin(mOnlyKey);
                     break;
 
                 case DOWN_START:
                     Log.e("----------msg", " ------- DOWN_START ----   ");
-                    handleStart(downloadRunnable.tempSize != 0, msg.arg1);
+                    handleStart(mOnlyKey, onlyKeyRunnableMap.get(mOnlyKey).tempSize != 0, msg.arg1);
                     break;
                 case DOWN_ERROR:
                     Log.e("----------msg", " ------- err ----   ");
-                    handleError();
+                    handleError(mOnlyKey);
                     break;
                 case DOWNLOAD_ING:
                     Log.e("----------msg", " ------- ing ----   " + msg.arg2);
-                    handleProgress(msg.arg1, msg.arg2);
+                    handleProgress(mOnlyKey, msg.arg1, msg.arg2);
                     break;
                 case REQUEST_TIME_OUT:
                     Log.e("----------msg", " ------- REQUEST_TIME_OUT ----   ");
-                    handleError();
+                    handleError(mOnlyKey);
                     break;
                 case HANDLER_PAUSE:
                     Log.e("----------msg", " ------- HANDLER_PAUSE ----   ");
-                    handlePause();
+                    handlePause(mOnlyKey);
                     break;
                 case HANDLER_REMOVE:
                     Log.e("----------msg", " ------- HANDLER_REMOVE ----   ");
-                    handleRemove();
+                    handleRemove(mOnlyKey);
                     break;
                 default:
                     break;
@@ -243,50 +292,50 @@ public class DownloadServiceManage implements IDownloadEngine {
     }
 
 
-    private void handleRemove() {
+    private void handleRemove(String onlyKey) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
             l.onRemove(onlyKey);
         }
         Log.d(TAG, "handleRemove   " + onlyKey);
     }
 
-    private void handlePause() {
+    private void handlePause(String onlyKey) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
             l.onPause(onlyKey);
         }
         Log.d(TAG, "handlePause   " + onlyKey);
     }
 
-    private void handleProgress(long totalSize, int progress) {
+    private void handleProgress(String onlyKey, long totalSize, int progress) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
             l.onProgress(onlyKey,totalSize, progress);
         }
         Log.d(TAG, "handleProgress   " + onlyKey);
     }
 
-    private void handleError() {
+    private void handleError(String onlyKey) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
             l.onError(onlyKey);
         }
         Log.d(TAG, "handleError   " + onlyKey);
     }
 
-    private void handleDownloadSuccess() {
+    private void handleDownloadSuccess(String onlyKey, String path, String apkName) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onSuccess(onlyKey, downloadRunnable.savePath,  downloadRunnable.name);
+            l.onSuccess(onlyKey, path,  apkName);
         }
         Log.d(TAG, "handleDownloadSuccess   " + onlyKey);
     }
 
-    private void handleStart(boolean isRestart, int totalSize) {
+    private void handleStart(String onlyKey, boolean isRestart, int totalSize) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
             l.onStart(onlyKey, isRestart, totalSize);
         }
 
-        Log.d(TAG, "handleStart   " + onlyKey);
+        Log.d(TAG, "handleStart   " + onlyKey + " ----- isRestart = " + isRestart);
     }
 
-    private void handleInstallBegin() {
+    private void handleInstallBegin(String onlyKey) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
             l.onInstallBegin(onlyKey);
         }

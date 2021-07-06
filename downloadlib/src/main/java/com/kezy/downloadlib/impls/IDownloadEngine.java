@@ -15,6 +15,9 @@ public interface IDownloadEngine {
 
     // 开始下载
     void startDownload(Context context, String url, String onlyKey);
+    void startDownloadWithPath(Context context, String url, String onlyKey, String path);
+    void startDownloadWithName(Context context, String url, String onlyKey, String name);
+    void startDownloadWithNameAndPath(Context context, String url, String onlyKey, String name, String path);
 
     //暂停下载
     void pauseDownload(Context context, String onlyKey);

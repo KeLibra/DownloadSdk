@@ -8,15 +8,13 @@ import android.util.Log;
 import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.receiver.InstallApkReceiver;
-import com.kezy.downloadlib.downloader.DownloadServiceManage;
+import com.kezy.downloadlib.downloader.DownloadEngineManager;
 import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
 import com.kezy.downloadlib.impls.IDownloadTaskListener;
 import com.kezy.downloadlib.impls.IInstallListener;
 import com.kezy.downloadlib.impls.ITaskImpl;
 import com.kezy.noticelib.NotificationsManager;
-
-import java.util.logging.Logger;
 
 
 /**
@@ -38,7 +36,7 @@ public class DownloadTask implements ITaskImpl {
         return mInfo;
     }
     public DownloadTask(Context context, DownloadInfo info) {
-        mTaskManager = new DownloadServiceManage(context);
+        mTaskManager = new DownloadEngineManager(context);
         this.mContext = context;
         this.mInfo = info;
         if (mContext != null) {
@@ -55,6 +53,19 @@ public class DownloadTask implements ITaskImpl {
     @Override
     public void start(Context context) {
         if (mTaskManager != null) {
+            if (!TextUtils.isEmpty(mInfo.name) && !TextUtils.isEmpty(mInfo.path)) {
+                mTaskManager.startDownloadWithNameAndPath(context, mInfo.url, mInfo.onlyKey(), mInfo.name, mInfo.path);
+                return;
+            }
+            if (!TextUtils.isEmpty(mInfo.name)) {
+                mTaskManager.startDownloadWithName(context, mInfo.url, mInfo.onlyKey(), mInfo.name);
+                return;
+            }
+            if (!TextUtils.isEmpty(mInfo.path)) {
+                mTaskManager.startDownloadWithPath(context, mInfo.url, mInfo.onlyKey(), mInfo.path);
+                return;
+            }
+
             mTaskManager.startDownload(context, mInfo.url, mInfo.onlyKey());
         }
     }

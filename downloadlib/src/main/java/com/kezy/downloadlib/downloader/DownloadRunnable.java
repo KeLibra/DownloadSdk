@@ -24,13 +24,13 @@ import java.net.URL;
 import java.net.URLDecoder;
 
 import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_PATH;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWNLOAD_ING;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWN_ERROR;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWN_OK;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWN_START;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.HANDLER_PAUSE;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.HANDLER_REMOVE;
-import static com.kezy.downloadlib.downloader.DownloadServiceManage.REQUEST_TIME_OUT;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.DOWNLOAD_ING;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.DOWN_ERROR;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.DOWN_OK;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.DOWN_START;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.HANDLER_PAUSE;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.HANDLER_REMOVE;
+import static com.kezy.downloadlib.downloader.DownloadEngineManager.REQUEST_TIME_OUT;
 
 /**
  * @Author Kezy
@@ -40,31 +40,33 @@ import static com.kezy.downloadlib.downloader.DownloadServiceManage.REQUEST_TIME
 public class DownloadRunnable implements Runnable {
 
 
-    private final WeakReference<DownloadServiceManage.UpdateHandler> weakHandler;
-    private final WeakReference<Context> weakContext;
+    public final WeakReference<DownloadEngineManager.StatusChangeHandler> weakHandler;
+    public final WeakReference<Context> weakContext;
 
 
     public String name;
+    public String savePath;
     public int downloadStatus = -1;
     public boolean isRunning = true;
-    public String savePath;
 
 
-    private String downloadUrl;
-
+    public String downloadUrl;
     public long tempSize;
-    private long totalSize;
+    public long totalSize;
 
-    private int progress;
-    private double speed;
+    public int progress;
+    public double speed;
 
-
-    public DownloadRunnable(Context context, String downloadUrl, DownloadServiceManage.UpdateHandler handler) {
+    public DownloadRunnable(Context context, String downloadUrl, DownloadEngineManager.StatusChangeHandler handler) {
         weakHandler = new WeakReference<>(handler);
         weakContext = new WeakReference<>(context);
         this.downloadUrl = downloadUrl;
     }
 
+    public String apkPath() {
+        return new StringBuilder()
+                .append(savePath).append(File.separator).append(name).toString();
+    }
 
     @Override
     public void run() {
@@ -122,7 +124,7 @@ public class DownloadRunnable implements Runnable {
      *
      * @throws IOException
      */
-    private long downloadUpdateFile(Handler handler) throws IOException {
+    public long downloadUpdateFile(Handler handler) throws IOException {
 
         double downloadSpeed;
         long speedTemp = tempSize;

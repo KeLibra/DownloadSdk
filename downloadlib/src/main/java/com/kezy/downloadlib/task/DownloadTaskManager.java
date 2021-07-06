@@ -16,20 +16,20 @@ import java.util.Map;
  * @Time 2021/6/30
  * @Description
  */
-public class TaskManager {
+public class DownloadTaskManager {
 
     private Context mContext;
     private Map<String, DownloadTask> mRunTaskMap = new HashMap<>();
 
-    private TaskManager() {
+    private DownloadTaskManager() {
         loadLocalData();
     }
 
     private static class INSTANCE {
-        private static TaskManager instance = new TaskManager();
+        private static DownloadTaskManager instance = new DownloadTaskManager();
     }
 
-    public static TaskManager getInstance() {
+    public static DownloadTaskManager getInstance() {
         return INSTANCE.instance;
     }
 
