@@ -49,7 +49,7 @@ public class TaskManager {
 
 
     public void updateTask(DownloadTask task) {
-        if (task == null || task.mDownloadInfo == null) {
+        if (task == null || task.getInfo() == null) {
             return;
         }
         mRunTaskMap.put(task.createDownloadKey(), task);
@@ -57,7 +57,7 @@ public class TaskManager {
     }
 
     public void removeTask(DownloadTask task) {
-        if (task == null || task.mDownloadInfo == null) {
+        if (task == null || task.getInfo() == null) {
             return;
         }
         mRunTaskMap.remove(task.createDownloadKey());

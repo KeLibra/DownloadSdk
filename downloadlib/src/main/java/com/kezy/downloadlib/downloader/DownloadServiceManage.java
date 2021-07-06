@@ -4,10 +4,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Handler;
 import android.os.IBinder;
-import android.text.TextUtils;
+import android.os.Message;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.kezy.downloadlib.bean.DownloadInfo;
@@ -16,20 +18,17 @@ import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
 
 import java.io.File;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLDecoder;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
-import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_AD_ID;
-import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_NAME;
-import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_URL;
 
 
 /**
+ *
  */
 public class DownloadServiceManage implements IDownloadEngine {
 
+    private static final String TAG = "--------msg_d_m";
     private boolean mConnected = false;
 
     private Context mContext;
@@ -39,9 +38,24 @@ public class DownloadServiceManage implements IDownloadEngine {
 
     private DownloadInfo mInfo;
 
-    private IDownloadStatusListener mListener;
+    public UpdateHandler mHandler;
+
+    private List<IDownloadStatusListener> mDownloadServiceStatueListeners = new CopyOnWriteArrayList<>();
+
+    public void removeDownloadStatueListener(IDownloadStatusListener l) {
+        if (mDownloadServiceStatueListeners != null) {
+            mDownloadServiceStatueListeners.remove(l);
+        }
+    }
+
+    public void removeAllListener() {
+        if (mDownloadServiceStatueListeners != null) {
+            mDownloadServiceStatueListeners.clear();
+        }
+    }
 
     public DownloadServiceManage(Context context) {
+        mHandler = new UpdateHandler(context);
         if (context != null) {
             mContext = context.getApplicationContext();
             init(mContext);
@@ -56,91 +70,83 @@ public class DownloadServiceManage implements IDownloadEngine {
         context.bindService(new Intent(context, DownloadService.class), mConn, Context.BIND_AUTO_CREATE);
     }
 
+    @Override
     public void bindDownloadInfo(DownloadInfo info) {
-
         Log.e("----------", " -------- bindDownloadInfo " + mDownloadService);
-        if (mDownloadService != null) {
-            mDownloadService.setDownloadInfo(info);
-        } else {
-            mInfo = info;
-        }
+        mInfo = info;
+    }
+
+    @Override
+    public DownloadInfo getInfo() {
+        return mInfo;
     }
 
     @Override
     public void bindStatusListener(IDownloadStatusListener listener) {
-        if (mDownloadService != null) {
-            mDownloadService.addDownloadStatueListener(listener);
-        } else {
-            mListener = listener;
+        if (!mDownloadServiceStatueListeners.contains(listener)) {
+            mDownloadServiceStatueListeners.add(listener);
         }
     }
 
-    public DownloadInfo getInfo() {
-        if (mDownloadService == null) {
-            Log.i("-------msg", " v2 manager info " + mInfo);
-            return mInfo;
-        }
-        Log.i("-------msg", " v2 manager info " + mDownloadService.getDownloadInfoByUrl(mInfo.url));
-        return mDownloadService.getDownloadInfoByUrl(mInfo.url);
-    }
 
     @Override
-    public void startDownload(Context context, String url) {
-        goDownloadApk();
-    }
-
-    @Override
-    public void pauseDownload(Context context, String url) {
+    public void startDownload(Context context) {
         if (!checkConnectionStatus(context)) {
             return;
         }
-        if (mDownloadService != null) {
-            mDownloadService.pauseDownload(mInfo.url);
-        }
-    }
-
-    @Override
-    public void continueDownload(Context context, String url) {
-
-        if (!checkConnectionStatus(context)) {
-            goDownloadApk();
+        if (mDownloadService == null || mDownloadService.threadPool == null) {
             return;
         }
-        if (mDownloadService != null) {
-            mDownloadService.startDownload(mInfo.url);
-        }
+        mInfo.isRunning = true;
+        mInfo.status = DownloadInfo.Status.DOWNLOADING;
+        mInfo.retryCount = 0;
+        mDownloadService.threadPool.submit(new DownloadRunnable(context, mInfo, mHandler));
     }
 
     @Override
-    public void deleteDownload(Context context, String url) {
+    public void pauseDownload(Context context) {
         if (!checkConnectionStatus(context)) {
             return;
         }
-        if (mDownloadService != null) {
-            mDownloadService.removeDownload(mInfo.url);
-        }
-    }
-
-    public int getStatus(Context context, String url) {
-        if (mDownloadService == null) {
-            return mInfo.status;
-        }
-        return mDownloadService.getStatueByUrl(mInfo.url);
+        mInfo.isRunning = false;
+        mInfo.status = DownloadInfo.Status.STOPPED;
     }
 
     @Override
-    public void installApk(Context context, String url) {
+    public void continueDownload(Context context) {
+
+        startDownload(context);
+    }
+
+    @Override
+    public void deleteDownload(Context context) {
+
+        mInfo.status = DownloadInfo.Status.DELETE;
+        mInfo.isRunning = false;
+        String filePath = mInfo.getSavePath();
+        if (filePath != null && new File(filePath).exists()) {
+            new File(filePath).delete();
+        }
+        File tempDownloadPath = DownloadUtils.getTempDownloadPath(mInfo);
+        if (tempDownloadPath != null && tempDownloadPath.exists()) {
+            tempDownloadPath.delete();
+        }
+    }
+
+
+    @Override
+    public void installApk(Context context) {
         if (mDownloadService != null) {
-            DownloadUtils.installApk(mContext, mDownloadService.getDownloadSavePath(mInfo.url));
+            DownloadUtils.installApk(mContext, mInfo.getSavePath());
         }
     }
 
     @Override
     public void destroy() {
         if (mDownloadService != null) {
-            mDownloadService.removeAllListener();
             mDownloadService.unbindService(mConn);
         }
+        removeAllListener();
         unBindDownloadService(mContext);
     }
 
@@ -168,8 +174,6 @@ public class DownloadServiceManage implements IDownloadEngine {
             if (service instanceof DownloadService.Binder) {
                 mConnected = true;
                 mDownloadService = ((DownloadService.Binder) service).getService();
-                mDownloadService.setDownloadInfo(mInfo);
-                mDownloadService.addDownloadStatueListener(mListener);
             }
         }
     };
@@ -182,109 +186,129 @@ public class DownloadServiceManage implements IDownloadEngine {
         return true;
     }
 
-    @Nullable
-    public String getDownloadSavePath(String url) {
 
-        if (mDownloadService != null) {
-            return mDownloadService.getDownloadSavePath(url);
+
+
+
+
+    public static final int DOWN_OK = 1001;
+    public static final int DOWN_ERROR = 1002;
+    public static final int DOWN_START = 1003;
+    public static final int DOWNLOAD_ING = 1004;
+    public static final int REQUEST_TIME_OUT = 1005;
+    public static final int HANDLER_PAUSE = 1006;
+    public static final int HANDLER_REMOVE = 1007;
+
+    public class UpdateHandler extends Handler {
+
+        private Context mContext;
+        public UpdateHandler(Context context) {
+            mContext = context;
         }
 
-        return mInfo.path;
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            Log.i("-------------msg", " ------- handleMessage : " + msg.toString());
+            DownloadInfo task = (DownloadInfo) msg.obj;
+            if (task == null) {
+                return;
+            }
+
+            if (mInfo != null) {
+                mInfo.status = task.status;
+                mInfo.isRunning = task.isRunning;
+                mInfo.progress = task.progress;
+                mInfo.totalSize = task.totalSize;
+                mInfo.tempSize = task.tempSize;
+            }
+
+            switch (msg.what) {
+                case DOWN_OK:
+                    Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + task.url);
+                    // 下载完成，点击安装
+                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + task.getSavePath());
+                    DownloadUtils.installApk(mContext, task.getSavePath());
+                    handleDownloadSuccess(mInfo);
+                    handleInstallBegin(mInfo);
+                    break;
+
+                case DOWN_START:
+                    Log.e("----------msg", " ------- DOWN_START ----   ");
+                    handleStart(mInfo, task.tempSize != 0);
+                    break;
+                case DOWN_ERROR:
+                    Log.e("----------msg", " ------- err ----   ");
+                    handleError(mInfo);
+                    break;
+                case DOWNLOAD_ING:
+                    Log.e("----------msg", " ------- ing ----   " + task.progress);
+                    handleProgress(mInfo);
+                    break;
+                case REQUEST_TIME_OUT:
+                    Log.e("----------msg", " ------- REQUEST_TIME_OUT ----   ");
+                    handleError(mInfo);
+                    break;
+                case HANDLER_PAUSE:
+                    Log.e("----------msg", " ------- HANDLER_PAUSE ----   ");
+                    handlePause(mInfo);
+                    break;
+                case HANDLER_REMOVE:
+                    Log.e("----------msg", " ------- HANDLER_REMOVE ----   ");
+                    handleRemove(mInfo);
+                    break;
+                default:
+                    break;
+            }
+        }
     }
 
-    public boolean isDowning(String url) {
 
-        if (mDownloadService != null) {
-            return mDownloadService.isDowning(url);
+    private void handleRemove(DownloadInfo info) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onRemove(info.onlyKey());
         }
-        return mInfo.status == DownloadInfo.Status.DOWNLOADING;
+        Log.d(TAG, "handleRemove   " + info);
     }
 
-
-
-    public void downLoadAPK(final String downUrl, String fileName) {
-        if (TextUtils.isEmpty(downUrl)) {
-            return;
+    private void handlePause(DownloadInfo info) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onPause(info.onlyKey());
         }
-
-        if (TextUtils.isEmpty(fileName)) {
-            fileName = getFileNameByDownLoadUrl(downUrl);
-        }
-        try {
-            goDownloadApk(URLDecoder.decode(downUrl, "utf-8"), fileName);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
-        }
+        Log.d(TAG, "handlePause   " + info);
     }
 
-
-    private String getFileNameByDownLoadUrl(String downloadUrl) {
-        if (TextUtils.isEmpty(downloadUrl)) {
-            return System.currentTimeMillis() + "";
+    private void handleProgress(DownloadInfo info) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onProgress(info.onlyKey(), info.progress);
         }
-
-        URL url = null;
-        try {
-            url = new URL(downloadUrl);
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (url == null) {
-            return System.currentTimeMillis() + "";
-        }
-
-        String fileName = new File(url.getPath()).getName();
-        if (TextUtils.isEmpty(fileName)) {
-            return System.currentTimeMillis() + "";
-        }
-
-        if (fileName.length() > 50) {
-            fileName = fileName.substring(0, 50);
-        }
-
-        return fileName;
+        Log.d(TAG, "handleProgress   " + info);
     }
 
-    private void goDownloadApk(String downloadUrl, String fileName) {
-        if (mContext == null) {
-            return;
+    private void handleError(DownloadInfo info) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onError(info.onlyKey());
         }
-        if (!mConnected) {
-            init(mContext);
-        }
-
-        Intent intent = new Intent(mContext, DownloadService.class);
-        intent.putExtra(DOWNLOAD_APK_URL, downloadUrl);
-        if (!TextUtils.isEmpty(fileName)) {
-            intent.putExtra(DOWNLOAD_APK_NAME, fileName);
-        } else {
-            intent.putExtra(DOWNLOAD_APK_NAME, getFileNameByDownLoadUrl(downloadUrl));
-        }
-        mContext.startService(intent);
+        Log.d(TAG, "handleError   " + info);
     }
 
-    private void goDownloadApk() {
-        if (mContext == null) {
-            return;
+    private void handleDownloadSuccess(DownloadInfo info) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onSuccess(info.onlyKey(), info.path);
         }
-        if (!mConnected) {
-            init(mContext);
+        Log.d(TAG, "handleDownloadSuccess   " + info);
+    }
+
+    private void handleStart(DownloadInfo info, boolean isRestart) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onStart(info.onlyKey(), isRestart, info.totalSize);
         }
 
-        if (mInfo == null || TextUtils.isEmpty(mInfo.url)) {
-            return;
+        Log.d(TAG, "handleStart   " + info);
+    }
+
+    private void handleInstallBegin(DownloadInfo info) {
+        for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
+            l.onInstallBegin(info.onlyKey());
         }
-        Intent intent = new Intent(mContext, DownloadService.class);
-        intent.putExtra(DOWNLOAD_APK_URL, mInfo.url);
-        if (!TextUtils.isEmpty(mInfo.name)) {
-            intent.putExtra(DOWNLOAD_APK_NAME, mInfo.name);
-        } else {
-            intent.putExtra(DOWNLOAD_APK_NAME, getFileNameByDownLoadUrl(mInfo.url));
-        }
-        intent.putExtra(DOWNLOAD_APK_AD_ID, mInfo.adId);
-        mContext.startService(intent);
     }
 }

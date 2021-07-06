@@ -14,6 +14,8 @@ import android.webkit.MimeTypeMap;
 
 import androidx.core.content.FileProvider;
 
+import com.kezy.downloadlib.bean.DownloadInfo;
+
 import java.io.File;
 import java.util.List;
 
@@ -162,6 +164,14 @@ public class DownloadUtils {
         }catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+
+    public static File getTempDownloadPath(DownloadInfo task) {
+        if (task != null) {
+            return new File(task.path, task.name + ".temp");
+        }
+        return null;
     }
 
     public static String getFileSize(double length) {

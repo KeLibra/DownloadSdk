@@ -24,9 +24,13 @@ import java.net.URL;
 import java.net.URLDecoder;
 
 import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_PATH;
-import static com.kezy.downloadlib.downloader.DownloadService.DOWN_OK;
-import static com.kezy.downloadlib.downloader.DownloadService.HANDLER_PAUSE;
-import static com.kezy.downloadlib.downloader.DownloadService.HANDLER_REMOVE;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWNLOAD_ING;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWN_ERROR;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWN_OK;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.DOWN_START;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.HANDLER_PAUSE;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.HANDLER_REMOVE;
+import static com.kezy.downloadlib.downloader.DownloadServiceManage.REQUEST_TIME_OUT;
 
 /**
  * @Author Kezy
@@ -37,11 +41,11 @@ public class DownloadRunnable implements Runnable{
 
 
     private DownloadInfo mTask;
-    private final WeakReference<DownloadService.UpdateHandler> weakHandler;
+    private final WeakReference<DownloadServiceManage.UpdateHandler> weakHandler;
     private final WeakReference<Context> weakContext;
 
 
-    public DownloadRunnable(Context context, DownloadInfo task, DownloadService.UpdateHandler handler) {
+    public DownloadRunnable(Context context, DownloadInfo task, DownloadServiceManage.UpdateHandler handler) {
         this.mTask = task;
         weakHandler = new WeakReference<>(handler);;
         weakContext = new WeakReference<>(context);;
@@ -83,18 +87,18 @@ public class DownloadRunnable implements Runnable{
             } else {
                 mTask.status = DownloadInfo.Status.ERROR;
                 message = Message.obtain();
-                message.what = DownloadService.DOWN_ERROR;
+                message.what = DOWN_ERROR;
                 message.obj = mTask;
                 Log.d("mydownload", "downloadCoutn" + downloadSize);
             }
         } catch (SocketTimeoutException e) {
             message = Message.obtain();
-            message.what =  DownloadService.REQUEST_TIME_OUT;
+            message.what =  REQUEST_TIME_OUT;
             mTask.status = DownloadInfo.Status.ERROR;
             message.obj = mTask;
         } catch (IOException e) {
             message = Message.obtain();
-            message.what = DownloadService.DOWN_ERROR;
+            message.what = DOWN_ERROR;
             mTask.status = DownloadInfo.Status.ERROR;
             message.obj = mTask;
         } finally {
@@ -129,7 +133,7 @@ public class DownloadRunnable implements Runnable{
         if (task.retryCount == 0) {
             if (handler != null) {
                 Message message = Message.obtain();
-                message.what = DownloadService.DOWN_START;
+                message.what = DOWN_START;
                 task.status = DownloadInfo.Status.STARTED;
                 message.obj = task;
                 handler.sendMessage(message);
@@ -233,7 +237,7 @@ public class DownloadRunnable implements Runnable{
                 }
             }
 
-            File file = getTempDownloadPath(task);
+            File file = DownloadUtils.getTempDownloadPath(task);
             Log.v("---------msg", " ----- download save   getTempDownloadPath.length()  = " + file.length() + " ---- path = " + file.getAbsolutePath());
             if (file != null && file.length() <= 0) {
                 Log.e("---------msg", " ----- download save   被清空了进度， 需要重新下载  = ");
@@ -265,7 +269,7 @@ public class DownloadRunnable implements Runnable{
                             Log.v("-------msg", "handler = " + handler +" ------ progress = " + updateCount );
                             if (handler != null) {
                                 Message message = Message.obtain();
-                                message.what = DownloadService.DOWNLOAD_ING;
+                                message.what = DOWNLOAD_ING;
                                 task.status = DownloadInfo.Status.DOWNLOADING;
                                 message.obj = task;
                                 handler.sendMessage(message);
@@ -361,12 +365,5 @@ public class DownloadRunnable implements Runnable{
             }
             return null;
         }
-    }
-
-    private File getTempDownloadPath(DownloadInfo task) {
-        if (task != null) {
-            return new File(task.path, task.name + ".temp");
-        }
-        return null;
     }
 }

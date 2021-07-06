@@ -24,7 +24,6 @@ import com.kezy.noticelib.NotificationsManager;
 public class DownloadTask implements ITaskImpl {
 
     public IDownloadEngine mTaskManager;
-    public DownloadInfo mDownloadInfo;
     private Context mContext;
     private IDownloadTaskListener mTaskListener;
 
@@ -32,8 +31,7 @@ public class DownloadTask implements ITaskImpl {
 
     public DownloadTask(Context context, DownloadInfo info) {
         mTaskManager = new DownloadServiceManage(context);
-        ((DownloadServiceManage) mTaskManager).bindDownloadInfo(info);
-        this.mDownloadInfo = info;
+        mTaskManager.bindDownloadInfo(info);
         this.mContext = context;
         if (mContext != null) {
             mNotifyManager = (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
@@ -44,54 +42,54 @@ public class DownloadTask implements ITaskImpl {
     @Override
     public void start(Context context) {
         if (mTaskManager != null) {
-            mTaskManager.startDownload(context, mDownloadInfo.url);
+            mTaskManager.startDownload(context);
         }
     }
 
     @Override
     public void pause(Context context) {
         if (mTaskManager != null) {
-            mTaskManager.pauseDownload(context, mDownloadInfo.url);
+            mTaskManager.pauseDownload(context);
         }
     }
 
     @Override
     public void reStart(Context context) {
         if (mTaskManager != null) {
-            mTaskManager.continueDownload(context, mDownloadInfo.url);
+            mTaskManager.continueDownload(context);
         }
     }
 
     @Override
     public void remove(Context context) {
         if (mTaskManager != null) {
-            mTaskManager.deleteDownload(context, mDownloadInfo.url);
+            mTaskManager.deleteDownload(context);
         }
     }
 
     @Override
     public void install(Context context) {
         if (mTaskManager != null) {
-            mTaskManager.installApk(context, mDownloadInfo.url);
+            mTaskManager.installApk(context);
         }
     }
 
     @Override
     public int getStatus() {
-        if (mTaskManager == null) {
+        if (mTaskManager == null || mTaskManager.getInfo() == null) {
             return 0;
         }
-        return mDownloadInfo.status;
+        return getInfo().status;
     }
 
     @Override
     public DownloadInfo getInfo() {
-        return mDownloadInfo;
+        return mTaskManager.getInfo();
     }
 
     @Override
     public String createDownloadKey() {
-        return mDownloadInfo.onlyKey();
+        return mTaskManager.getInfo().onlyKey();
     }
 
     @Override
@@ -101,71 +99,71 @@ public class DownloadTask implements ITaskImpl {
             mTaskManager.bindStatusListener(new IDownloadStatusListener() {
                 @Override
                 public void onStart(String onlyKey, boolean isRestart, long totalSize) {
-                    mDownloadInfo.status = DownloadInfo.Status.STARTED;
-                    mDownloadInfo.totalSize = totalSize;
+                    getInfo().status = DownloadInfo.Status.STARTED;
+                    getInfo().totalSize = totalSize;
                     if (taskListener != null) {
-                        taskListener.onStart(mDownloadInfo.onlyKey(), isRestart);
+                        taskListener.onStart(getInfo().onlyKey(), isRestart);
                     }
                 }
 
                 @Override
                 public void onPause(String onlyKey) {
-                    mDownloadInfo.status = DownloadInfo.Status.STOPPED;
+                    getInfo().status = DownloadInfo.Status.STOPPED;
                     if (taskListener != null) {
-                        taskListener.onPause(mDownloadInfo.onlyKey());
+                        taskListener.onPause(getInfo().onlyKey());
                     }
                 }
 
                 @Override
                 public void onContinue(String onlyKey) {
-                    mDownloadInfo.status = DownloadInfo.Status.DOWNLOADING;
+                    getInfo().status = DownloadInfo.Status.DOWNLOADING;
                     if (taskListener != null) {
-                        taskListener.onContinue(mDownloadInfo.onlyKey());
+                        taskListener.onContinue(getInfo().onlyKey());
                     }
                 }
 
                 @Override
                 public void onRemove(String onlyKey) {
-                    mDownloadInfo.status = DownloadInfo.Status.DELETE;
+                    getInfo().status = DownloadInfo.Status.DELETE;
                     if (taskListener != null) {
-                        taskListener.onRemove(mDownloadInfo.onlyKey());
+                        taskListener.onRemove(getInfo().onlyKey());
                     }
                 }
 
                 @Override
                 public void onProgress(String onlyKey, int progress) {
-                    mDownloadInfo.status = DownloadInfo.Status.DOWNLOADING;
-                    mDownloadInfo.tempSize = (long) (mDownloadInfo.totalSize * progress / 100);
-                    mDownloadInfo.progress = progress;
+                    getInfo().status = DownloadInfo.Status.DOWNLOADING;
+                    getInfo().tempSize = (long) (getInfo().totalSize * progress / 100);
+                    getInfo().progress = progress;
                     if (taskListener != null) {
-                        taskListener.onProgress(mDownloadInfo.onlyKey());
+                        taskListener.onProgress(getInfo().onlyKey());
                     }
-                    NotificationsManager.getInstance().sendProgressViewNotification(mContext, mNotifyManager, mDownloadInfo.progress, mDownloadInfo.timeId);
+                    NotificationsManager.getInstance().sendProgressViewNotification(mContext, mNotifyManager, getInfo().progress, getInfo().timeId);
                 }
 
                 @Override
                 public void onError(String onlyKey) {
-                    mDownloadInfo.status = DownloadInfo.Status.ERROR;
+                    getInfo().status = DownloadInfo.Status.ERROR;
                     if (taskListener != null) {
-                        taskListener.onError(mDownloadInfo.onlyKey());
+                        taskListener.onError(getInfo().onlyKey());
                     }
                 }
 
                 @Override
                 public void onSuccess(String onlyKey, String path) {
-                    mDownloadInfo.status = DownloadInfo.Status.FINISHED;
-                    mDownloadInfo.packageName = DownloadUtils.getPackageNameByFilepath(mContext, mDownloadInfo.getSavePath());
+                    getInfo().status = DownloadInfo.Status.FINISHED;
+                    getInfo().packageName = DownloadUtils.getPackageNameByFilepath(mContext, getInfo().getSavePath());
                     if (taskListener != null) {
-                        taskListener.onSuccess(mDownloadInfo.onlyKey());
+                        taskListener.onSuccess(getInfo().onlyKey());
                     }
-                    NotificationsManager.getInstance().clearNotificationById(mNotifyManager, (int) mDownloadInfo.timeId);
+                    NotificationsManager.getInstance().clearNotificationById(mNotifyManager, (int) getInfo().timeId);
                 }
 
                 @Override
                 public void onInstallBegin(String onlyKey) {
-                    mDownloadInfo.status = DownloadInfo.Status.FINISHED;
+                    getInfo().status = DownloadInfo.Status.FINISHED;
                     if (taskListener != null) {
-                        taskListener.onInstallBegin(mDownloadInfo.onlyKey());
+                        taskListener.onInstallBegin(getInfo().onlyKey());
                     }
                 }
             });
@@ -174,18 +172,18 @@ public class DownloadTask implements ITaskImpl {
 
     @Override
     public void openApp(Context context) {
-        DownloadUtils.startAppByPackageName(context, mDownloadInfo.packageName);
+        DownloadUtils.startAppByPackageName(context, getInfo().packageName);
     }
 
 
     private IInstallListener thisListener = new IInstallListener() {
         @Override
         public void onInstall(String packageName) {
-            if (TextUtils.equals(packageName, mDownloadInfo.packageName)) {
+            if (TextUtils.equals(packageName, getInfo().packageName)) {
                 // 安装回调
                 if (mTaskListener != null) {
-                    mDownloadInfo.status = DownloadInfo.Status.INSTALLED;
-                    mTaskListener.onInstallSuccess(mDownloadInfo.onlyKey());
+                    getInfo().status = DownloadInfo.Status.INSTALLED;
+                    mTaskListener.onInstallSuccess(getInfo().onlyKey());
                 }
             }
         }
