@@ -39,9 +39,6 @@ public class DownloadService extends Service {
     private Binder mBinder;
     private UpdateHandler mHandler;
 
-
-
-
     public ExecutorService threadPool;
 
     /**
@@ -131,7 +128,7 @@ public class DownloadService extends Service {
                         startDownload(dt.url);
                     }
                     if (dt.status == DownloadInfo.Status.FINISHED) {
-                        File file = new File(dt.path);
+                        File file = new File(dt.getSavePath());
                         if (file == null || !file.exists()) {
                             Log.i("-------msg", "------- 已下载完成过了，但是apk被删除了，需要重新下载 ");
                             startDownload(dt.url);
@@ -212,7 +209,7 @@ public class DownloadService extends Service {
         if (getDownloadInfoByUrl(url) != null) {
             getDownloadInfoByUrl(url).status = DownloadInfo.Status.DELETE;
             getDownloadInfoByUrl(url).isRunning = false;
-            String filePath = getDownloadInfoByUrl(url).path;
+            String filePath = getDownloadInfoByUrl(url).getSavePath();
             if (filePath != null && new File(filePath).exists()) {
                 new File(filePath).delete();
             }
@@ -240,7 +237,7 @@ public class DownloadService extends Service {
     @Nullable
     public String getDownloadSavePath(String url) {
         if (getDownloadInfoByUrl(url) != null) {
-            return getDownloadInfoByUrl(url).path;
+            return getDownloadInfoByUrl(url).getSavePath();
         }
         return null;
     }
@@ -280,8 +277,8 @@ public class DownloadService extends Service {
                 case DOWN_OK:
                     Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + task.url);
                     // 下载完成，点击安装
-                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + task.path);
-                    DownloadUtils.installApk(mContext, task.path);
+                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + task.getSavePath());
+                    DownloadUtils.installApk(mContext, task.getSavePath());
                     handleDownloadSuccess(getDownloadInfoByUrl(task.url));
                     handleInstallBegin(getDownloadInfoByUrl(task.url));
                     break;

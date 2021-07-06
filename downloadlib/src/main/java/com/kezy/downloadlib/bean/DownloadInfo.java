@@ -35,15 +35,15 @@ public class DownloadInfo implements Parcelable {
     public String desc; // apk desc
     public String icon; // apk icon url
 
+    // 可传可不传，不传下载过程中会生成的信息
     public String packageName; // 包名
+    public String path; // 下载path
 
     // 下载过程中，自动生成的信息
-    public String path; // 下载path
     public int progress; // 进度
     public long taskId; // 任务id
     public long totalSize; // apk总大小
     public long tempSize; // apk 已下载大小
-
 
 
     // 喜马下载器，特殊的信息
@@ -102,7 +102,7 @@ public class DownloadInfo implements Parcelable {
     }
 
 
-    public String getFilePath() {
+    public String getSavePath() {
         return new StringBuilder()
                 /*
                  * .append(Environment.getExternalStorageDirectory())

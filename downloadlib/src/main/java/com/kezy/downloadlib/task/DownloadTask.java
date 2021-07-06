@@ -154,8 +154,7 @@ public class DownloadTask implements ITaskImpl {
                 @Override
                 public void onSuccess(String onlyKey, String path) {
                     mDownloadInfo.status = DownloadInfo.Status.FINISHED;
-                    mDownloadInfo.path = path;
-                    mDownloadInfo.packageName = DownloadUtils.getPackageNameByFilepath(mContext, path);
+                    mDownloadInfo.packageName = DownloadUtils.getPackageNameByFilepath(mContext, mDownloadInfo.getSavePath());
                     if (taskListener != null) {
                         taskListener.onSuccess(mDownloadInfo.onlyKey());
                     }
@@ -178,10 +177,12 @@ public class DownloadTask implements ITaskImpl {
         DownloadUtils.startAppByPackageName(context, mDownloadInfo.packageName);
     }
 
+
     private IInstallListener thisListener = new IInstallListener() {
         @Override
         public void onInstall(String packageName) {
             if (TextUtils.equals(packageName, mDownloadInfo.packageName)) {
+                // 安装回调
                 if (mTaskListener != null) {
                     mDownloadInfo.status = DownloadInfo.Status.INSTALLED;
                     mTaskListener.onInstallSuccess(mDownloadInfo.onlyKey());

@@ -12,7 +12,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.DownloadUtils;
+import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadTaskListener;
 import com.kezy.downloadlib.impls.ITaskImpl;
 import com.kezy.downloadlib.task.TaskManager;
@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("-----------msg", "  -==== 1111 " + task.getStatus());
 //                Log.e("-----------msg", "  -====  22222 " + task1.getStatus());
 
-                DownloadUtils.installApk(MainActivity.this, task.getInfo().path);
+                DownloadUtils.installApk(MainActivity.this, task.getInfo().getSavePath());
             }
         });
 

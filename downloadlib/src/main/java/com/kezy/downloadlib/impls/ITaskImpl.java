@@ -31,4 +31,5 @@ public interface ITaskImpl {
     void addTaskListener(IDownloadTaskListener listener);
 
     void openApp(Context context);
+
 }

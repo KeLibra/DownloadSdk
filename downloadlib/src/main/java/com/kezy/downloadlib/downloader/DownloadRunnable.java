@@ -31,7 +31,7 @@ import static com.kezy.downloadlib.downloader.DownloadService.HANDLER_REMOVE;
 /**
  * @Author Kezy
  * @Time 2021/7/5
- * @Description
+ * @Description 下载的runnable ， 用线程池调用
  */
 public class DownloadRunnable implements Runnable{
 
@@ -77,7 +77,6 @@ public class DownloadRunnable implements Runnable{
                 message = Message.obtain();
                 message.what = DOWN_OK;
                 mTask.status = DownloadInfo.Status.FINISHED;
-                mTask.path = mTask.getFilePath();
                 message.obj = mTask;
 
                 Log.e("----------msg", " ------- 下载完成 ---- downloadSize " + downloadSize);
@@ -299,8 +298,6 @@ public class DownloadRunnable implements Runnable{
                 }
                 Log.e("---------msg", " ---- 下载完成 file ------ " + file.getPath());
                 downloadedLength = task.tempSize;
-                task.tempSize = 0;
-                task.totalSize = 0;
                 task.isRunning = false;
             } else {
                 task.tempSize = 0;
