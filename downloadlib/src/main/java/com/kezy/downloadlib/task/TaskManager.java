@@ -5,7 +5,7 @@ import android.util.Log;
 
 
 import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.InstallApkReceiver;
+import com.kezy.downloadlib.receiver.InstallApkReceiver;
 import com.kezy.downloadlib.impls.ITaskImpl;
 
 import java.util.HashMap;
@@ -20,8 +20,6 @@ public class TaskManager {
 
     private Context mContext;
     private Map<String, DownloadTask> mRunTaskMap = new HashMap<>();
-
-    private Map<String, DownloadTask> mWaitTaskMap = new HashMap<>();
 
     private TaskManager() {
         loadLocalData();

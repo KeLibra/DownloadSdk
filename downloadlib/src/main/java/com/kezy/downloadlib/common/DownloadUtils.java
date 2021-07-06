@@ -1,4 +1,4 @@
-package com.kezy.downloadlib;
+package com.kezy.downloadlib.common;
 
 import android.content.ComponentName;
 import android.content.Context;

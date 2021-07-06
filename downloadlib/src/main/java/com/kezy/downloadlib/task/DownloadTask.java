@@ -5,8 +5,8 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.DownloadUtils;
-import com.kezy.downloadlib.InstallApkReceiver;
+import com.kezy.downloadlib.common.DownloadUtils;
+import com.kezy.downloadlib.receiver.InstallApkReceiver;
 import com.kezy.downloadlib.downloader.DownloadServiceManage;
 import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;

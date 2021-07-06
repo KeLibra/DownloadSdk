@@ -14,13 +14,19 @@ import androidx.annotation.Nullable;
 
 
 import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.DownloadUtils;
+import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_AD_ID;
+import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_NAME;
+import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_URL;
 
 /**
  * @Author Kezy
@@ -33,12 +39,10 @@ public class DownloadService extends Service {
     private Binder mBinder;
     private UpdateHandler mHandler;
 
-    public static final String DOWNLOAD_APK_PATH = "download_apk";
 
-    public static final String DOWNLOAD_APK_URL = "download_apk_url";
-    public static final String DOWNLOAD_APK_NAME = "download_apk_name";
-    public static final String DOWNLOAD_APK_AD_ID = "download_apk_ad_id";
 
+
+    public ExecutorService threadPool;
 
     /**
      * @Fields mDownloadTaskList : 正在下载的任务
@@ -99,6 +103,7 @@ public class DownloadService extends Service {
         Log.e("---------msg", " --------- onCreate");
         mBinder = new Binder();
         mHandler = new UpdateHandler(this);
+        threadPool = Executors.newFixedThreadPool(5);
     }
 
     @Override
@@ -116,9 +121,11 @@ public class DownloadService extends Service {
                         handleStart(dt, true);
                     }
                     if (dt.status == DownloadInfo.Status.ERROR) {
-                        DownloadThread thread = new DownloadThread(getApplicationContext(), dt, mHandler);
+//                        DownloadThread thread = new DownloadThread(getApplicationContext(), dt, mHandler);
+//                        dt.retryCount = 0;
+//                        thread.start();
                         dt.retryCount = 0;
-                        thread.start();
+                        threadPool.submit(new DownloadRunnable(getApplicationContext(),dt,mHandler));
                     }
                     if (dt.status == DownloadInfo.Status.STOPPED) {
                         startDownload(dt.url);
@@ -136,9 +143,11 @@ public class DownloadService extends Service {
             if (!mDownloadTaskList.contains(info)) {
                 mDownloadTaskList.add(info);
             }
-            DownloadThread thread = new DownloadThread(getApplicationContext(), info, mHandler);
+//            DownloadThread thread = new DownloadThread(getApplicationContext(), info, mHandler);
+//            info.retryCount = 0;
+//            thread.start();
             info.retryCount = 0;
-            thread.start();
+            threadPool.submit(new DownloadRunnable(getApplicationContext(),info,mHandler));
         }
 
         return super.onStartCommand(intent, flags, startId);
@@ -183,10 +192,12 @@ public class DownloadService extends Service {
         Log.e("-------msg", "startDownload  --- task.isRunning = " + getDownloadInfoByUrl(url).isRunning);
         if (getDownloadInfoByUrl(url).status != DownloadInfo.Status.DOWNLOADING) {
             getDownloadInfoByUrl(url).status = DownloadInfo.Status.DOWNLOADING;
-            DownloadThread thread = new DownloadThread(getApplicationContext(), getDownloadInfoByUrl(url), mHandler);
+//            DownloadThread thread = new DownloadThread(getApplicationContext(), getDownloadInfoByUrl(url), mHandler);
+            DownloadRunnable downloadRunnable = new DownloadRunnable(getApplicationContext(), getDownloadInfoByUrl(url), mHandler);
             getDownloadInfoByUrl(url).retryCount = 0;
             getDownloadInfoByUrl(url).isRunning = true;
-            thread.start();
+//            thread.start();
+            threadPool.submit(downloadRunnable);
         }
     }
 

@@ -11,7 +11,7 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.DownloadUtils;
+import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
 
@@ -21,9 +21,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
 
-import static com.kezy.downloadlib.downloader.DownloadService.DOWNLOAD_APK_AD_ID;
-import static com.kezy.downloadlib.downloader.DownloadService.DOWNLOAD_APK_NAME;
-import static com.kezy.downloadlib.downloader.DownloadService.DOWNLOAD_APK_URL;
+import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_AD_ID;
+import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_NAME;
+import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_URL;
 
 
 /**
