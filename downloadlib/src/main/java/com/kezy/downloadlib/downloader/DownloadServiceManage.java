@@ -33,10 +33,11 @@ public class DownloadServiceManage implements IDownloadEngine {
 
     private Context mContext;
 
+    private String onlyKey;
+
     @Nullable
     private DownloadService mDownloadService;
 
-    private DownloadInfo mInfo;
 
     public UpdateHandler mHandler;
 
@@ -70,16 +71,6 @@ public class DownloadServiceManage implements IDownloadEngine {
         context.bindService(new Intent(context, DownloadService.class), mConn, Context.BIND_AUTO_CREATE);
     }
 
-    @Override
-    public void bindDownloadInfo(DownloadInfo info) {
-        Log.e("----------", " -------- bindDownloadInfo " + mDownloadService);
-        mInfo = info;
-    }
-
-    @Override
-    public DownloadInfo getInfo() {
-        return mInfo;
-    }
 
     @Override
     public void bindStatusListener(IDownloadStatusListener listener) {
@@ -88,56 +79,57 @@ public class DownloadServiceManage implements IDownloadEngine {
         }
     }
 
+    DownloadRunnable downloadRunnable;
 
     @Override
-    public void startDownload(Context context) {
+    public void startDownload(Context context,String downloadUrl, String onlyKey) {
         if (!checkConnectionStatus(context)) {
             return;
         }
+        this.onlyKey = onlyKey;
         if (mDownloadService == null || mDownloadService.threadPool == null) {
             return;
         }
-        mInfo.isRunning = true;
-        mInfo.status = DownloadInfo.Status.DOWNLOADING;
-        mInfo.retryCount = 0;
-        mDownloadService.threadPool.submit(new DownloadRunnable(context, mInfo, mHandler));
+        if (downloadRunnable == null) {
+            downloadRunnable = new DownloadRunnable(context, downloadUrl, mHandler);
+            downloadRunnable.isRunning = true;
+        } else {
+            downloadRunnable.isRunning = true;
+            downloadRunnable.downloadStatus = DownloadInfo.Status.DOWNLOADING;
+        }
+
+        mDownloadService.threadPool.submit(downloadRunnable);
     }
 
     @Override
-    public void pauseDownload(Context context) {
+    public void pauseDownload(Context context, String onlyKey) {
         if (!checkConnectionStatus(context)) {
             return;
         }
-        mInfo.isRunning = false;
-        mInfo.status = DownloadInfo.Status.STOPPED;
+        Log.e("--------msg", " ------------ pauseDownload  111111111 ----------- " + downloadRunnable.isRunning);
+        downloadRunnable.isRunning = false;
+        downloadRunnable.downloadStatus = DownloadInfo.Status.STOPPED;
+        Log.e("--------msg", " ------------ pauseDownload  222222222 ----------- " + downloadRunnable.isRunning);
     }
 
     @Override
-    public void continueDownload(Context context) {
+    public void continueDownload(Context context, String onlyKey) {
 
-        startDownload(context);
+        startDownload(context, null, onlyKey);
     }
 
     @Override
-    public void deleteDownload(Context context) {
+    public void deleteDownload(Context context, String onlyKey) {
 
-        mInfo.status = DownloadInfo.Status.DELETE;
-        mInfo.isRunning = false;
-        String filePath = mInfo.getSavePath();
+        downloadRunnable.downloadStatus = DownloadInfo.Status.DELETE;
+        downloadRunnable.isRunning = false;
+        String filePath = downloadRunnable.savePath;
         if (filePath != null && new File(filePath).exists()) {
             new File(filePath).delete();
         }
-        File tempDownloadPath = DownloadUtils.getTempDownloadPath(mInfo);
+        File tempDownloadPath = DownloadUtils.getTempDownloadPath(downloadRunnable.savePath, downloadRunnable.name);
         if (tempDownloadPath != null && tempDownloadPath.exists()) {
             tempDownloadPath.delete();
-        }
-    }
-
-
-    @Override
-    public void installApk(Context context) {
-        if (mDownloadService != null) {
-            DownloadUtils.installApk(mContext, mInfo.getSavePath());
         }
     }
 
@@ -209,52 +201,40 @@ public class DownloadServiceManage implements IDownloadEngine {
         @Override
         public void handleMessage(@NonNull Message msg) {
             Log.i("-------------msg", " ------- handleMessage : " + msg.toString());
-            DownloadInfo task = (DownloadInfo) msg.obj;
-            if (task == null) {
-                return;
-            }
 
-            if (mInfo != null) {
-                mInfo.status = task.status;
-                mInfo.isRunning = task.isRunning;
-                mInfo.progress = task.progress;
-                mInfo.totalSize = task.totalSize;
-                mInfo.tempSize = task.tempSize;
-            }
 
             switch (msg.what) {
                 case DOWN_OK:
-                    Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + task.url);
+                    Log.i("-------------msg", " ------- 2222 下载完成 task URL : " + downloadRunnable);
                     // 下载完成，点击安装
-                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + task.getSavePath());
-                    DownloadUtils.installApk(mContext, task.getSavePath());
-                    handleDownloadSuccess(mInfo);
-                    handleInstallBegin(mInfo);
+                    Log.e("----------msg", " ------- 下载完成22 ----fileName   " + downloadRunnable.savePath);
+                    handleDownloadSuccess();
+                    handleInstallBegin();
                     break;
 
                 case DOWN_START:
                     Log.e("----------msg", " ------- DOWN_START ----   ");
-                    handleStart(mInfo, task.tempSize != 0);
+                    handleStart(downloadRunnable.tempSize != 0, msg.arg1);
                     break;
                 case DOWN_ERROR:
                     Log.e("----------msg", " ------- err ----   ");
-                    handleError(mInfo);
+                    handleError();
                     break;
                 case DOWNLOAD_ING:
-                    Log.e("----------msg", " ------- ing ----   " + task.progress);
-                    handleProgress(mInfo);
+                    Log.e("----------msg", " ------- ing ----   " + msg.arg2);
+                    handleProgress(msg.arg1, msg.arg2);
                     break;
                 case REQUEST_TIME_OUT:
                     Log.e("----------msg", " ------- REQUEST_TIME_OUT ----   ");
-                    handleError(mInfo);
+                    handleError();
                     break;
                 case HANDLER_PAUSE:
                     Log.e("----------msg", " ------- HANDLER_PAUSE ----   ");
-                    handlePause(mInfo);
+                    handlePause();
                     break;
                 case HANDLER_REMOVE:
                     Log.e("----------msg", " ------- HANDLER_REMOVE ----   ");
-                    handleRemove(mInfo);
+                    handleRemove();
                     break;
                 default:
                     break;
@@ -263,52 +243,52 @@ public class DownloadServiceManage implements IDownloadEngine {
     }
 
 
-    private void handleRemove(DownloadInfo info) {
+    private void handleRemove() {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onRemove(info.onlyKey());
+            l.onRemove(onlyKey);
         }
-        Log.d(TAG, "handleRemove   " + info);
+        Log.d(TAG, "handleRemove   " + onlyKey);
     }
 
-    private void handlePause(DownloadInfo info) {
+    private void handlePause() {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onPause(info.onlyKey());
+            l.onPause(onlyKey);
         }
-        Log.d(TAG, "handlePause   " + info);
+        Log.d(TAG, "handlePause   " + onlyKey);
     }
 
-    private void handleProgress(DownloadInfo info) {
+    private void handleProgress(long totalSize, int progress) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onProgress(info.onlyKey(), info.progress);
+            l.onProgress(onlyKey,totalSize, progress);
         }
-        Log.d(TAG, "handleProgress   " + info);
+        Log.d(TAG, "handleProgress   " + onlyKey);
     }
 
-    private void handleError(DownloadInfo info) {
+    private void handleError() {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onError(info.onlyKey());
+            l.onError(onlyKey);
         }
-        Log.d(TAG, "handleError   " + info);
+        Log.d(TAG, "handleError   " + onlyKey);
     }
 
-    private void handleDownloadSuccess(DownloadInfo info) {
+    private void handleDownloadSuccess() {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onSuccess(info.onlyKey(), info.path);
+            l.onSuccess(onlyKey, downloadRunnable.savePath,  downloadRunnable.name);
         }
-        Log.d(TAG, "handleDownloadSuccess   " + info);
+        Log.d(TAG, "handleDownloadSuccess   " + onlyKey);
     }
 
-    private void handleStart(DownloadInfo info, boolean isRestart) {
+    private void handleStart(boolean isRestart, int totalSize) {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onStart(info.onlyKey(), isRestart, info.totalSize);
+            l.onStart(onlyKey, isRestart, totalSize);
         }
 
-        Log.d(TAG, "handleStart   " + info);
+        Log.d(TAG, "handleStart   " + onlyKey);
     }
 
-    private void handleInstallBegin(DownloadInfo info) {
+    private void handleInstallBegin() {
         for (IDownloadStatusListener l : mDownloadServiceStatueListeners) {
-            l.onInstallBegin(info.onlyKey());
+            l.onInstallBegin(onlyKey);
         }
     }
 }

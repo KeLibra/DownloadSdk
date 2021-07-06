@@ -166,12 +166,15 @@ public class DownloadUtils {
         }
     }
 
-
     public static File getTempDownloadPath(DownloadInfo task) {
         if (task != null) {
             return new File(task.path, task.name + ".temp");
         }
         return null;
+    }
+
+    public static File getTempDownloadPath(String path, String name) {
+            return new File(path, name + ".temp");
     }
 
     public static String getFileSize(double length) {

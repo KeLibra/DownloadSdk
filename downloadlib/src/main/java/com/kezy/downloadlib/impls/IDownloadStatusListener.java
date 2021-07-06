@@ -11,8 +11,8 @@ public interface IDownloadStatusListener {
     void onPause(String onlyKey);
     void onContinue(String onlyKey);
     void onRemove(String onlyKey);
-    void onProgress(String onlyKey, int progress);
+    void onProgress(String onlyKey,long totalSize, int progress);
     void onError(String onlyKey);
-    void onSuccess(String onlyKey, String dowloadPath);
+    void onSuccess(String onlyKey, String downloadPath, String name);
     void onInstallBegin(String onlyKey);
 }

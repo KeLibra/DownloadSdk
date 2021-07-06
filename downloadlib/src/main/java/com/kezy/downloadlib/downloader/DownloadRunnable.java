@@ -37,25 +37,40 @@ import static com.kezy.downloadlib.downloader.DownloadServiceManage.REQUEST_TIME
  * @Time 2021/7/5
  * @Description 下载的runnable ， 用线程池调用
  */
-public class DownloadRunnable implements Runnable{
+public class DownloadRunnable implements Runnable {
 
 
-    private DownloadInfo mTask;
     private final WeakReference<DownloadServiceManage.UpdateHandler> weakHandler;
     private final WeakReference<Context> weakContext;
 
 
-    public DownloadRunnable(Context context, DownloadInfo task, DownloadServiceManage.UpdateHandler handler) {
-        this.mTask = task;
-        weakHandler = new WeakReference<>(handler);;
-        weakContext = new WeakReference<>(context);;
+    public String name;
+    public int downloadStatus = -1;
+    public boolean isRunning = true;
+    public String savePath;
+
+
+    private String downloadUrl;
+
+    public long tempSize;
+    private long totalSize;
+
+    private int progress;
+    private double speed;
+
+
+    public DownloadRunnable(Context context, String downloadUrl, DownloadServiceManage.UpdateHandler handler) {
+        weakHandler = new WeakReference<>(handler);
+        weakContext = new WeakReference<>(context);
+        this.downloadUrl = downloadUrl;
     }
+
 
     @Override
     public void run() {
-        Log.d("mydownload", "start: " + mTask.name + ", @ " + mTask.retryCount);
+        Log.d("mydownload", "start: " + name + ", @ ");
         Message message = null;
-        if (weakHandler == null ||  weakHandler.get() == null) {
+        if (weakHandler == null || weakHandler.get() == null) {
             return;
         }
         Handler handler = weakHandler.get();
@@ -64,45 +79,40 @@ public class DownloadRunnable implements Runnable{
                 return;
             }
 
-            long downloadSize = downloadUpdateFile(handler, mTask);
+            long downloadSize = downloadUpdateFile(handler);
 
             if (downloadSize == Integer.MAX_VALUE) {
                 message = Message.obtain();
-                if (mTask.status == DownloadInfo.Status.DELETE) {
+                if (downloadStatus == DownloadInfo.Status.DELETE) {
                     message.what = HANDLER_REMOVE;
                 } else {
                     message.what = HANDLER_PAUSE;
-                    mTask.status = DownloadInfo.Status.STOPPED;
+                    downloadStatus = DownloadInfo.Status.STOPPED;
                 }
-                message.obj = mTask;
 
             } else if (downloadSize > 0) {
                 // 下载成功
                 message = Message.obtain();
                 message.what = DOWN_OK;
-                mTask.status = DownloadInfo.Status.FINISHED;
-                message.obj = mTask;
+                downloadStatus = DownloadInfo.Status.FINISHED;
 
                 Log.e("----------msg", " ------- 下载完成 ---- downloadSize " + downloadSize);
             } else {
-                mTask.status = DownloadInfo.Status.ERROR;
+                downloadStatus = DownloadInfo.Status.ERROR;
                 message = Message.obtain();
                 message.what = DOWN_ERROR;
-                message.obj = mTask;
                 Log.d("mydownload", "downloadCoutn" + downloadSize);
             }
         } catch (SocketTimeoutException e) {
             message = Message.obtain();
-            message.what =  REQUEST_TIME_OUT;
-            mTask.status = DownloadInfo.Status.ERROR;
-            message.obj = mTask;
+            message.what = REQUEST_TIME_OUT;
+            downloadStatus = DownloadInfo.Status.ERROR;
         } catch (IOException e) {
             message = Message.obtain();
             message.what = DOWN_ERROR;
-            mTask.status = DownloadInfo.Status.ERROR;
-            message.obj = mTask;
+            downloadStatus = DownloadInfo.Status.ERROR;
         } finally {
-            Log.d("-----msg mydownload", mTask.retryCount + " --- :finally -- " + (message == null ? "null" : message.what));
+            Log.d("-----msg mydownload"," --- :finally -- " + (message == null ? "null" : message.what));
             handler.sendMessage(message);
         }
     }
@@ -112,41 +122,38 @@ public class DownloadRunnable implements Runnable{
      *
      * @throws IOException
      */
-    public long downloadUpdateFile(Handler handler,final DownloadInfo task) throws IOException {
+    private long downloadUpdateFile(Handler handler) throws IOException {
 
         double downloadSpeed;
-        long speedTemp = task.tempSize;
+        long speedTemp = tempSize;
         long mUpDateTimerMillis = 0;
         int down_step = 1;// 提示step
         long downloadedLength = 0;// 已经下载好的大小
         int updateCount = 0;// 百分比
 
-        Log.v("--------msg", "检测task的状态 ---  task.isRunning " + task.isRunning);
-        if (!task.isRunning) // 检测task的状态
+        Log.v("--------msg", "检测task的状态 ---  isRunning " + isRunning);
+        if (!isRunning) // 检测task的状态
         {
             return Integer.MAX_VALUE;
         }
 
-        task.status = DownloadInfo.Status.DOWNLOADING;
+        downloadStatus = DownloadInfo.Status.DOWNLOADING;
 
-        boolean isRestart = task.tempSize != 0;
-        if (task.retryCount == 0) {
-            if (handler != null) {
-                Message message = Message.obtain();
-                message.what = DOWN_START;
-                task.status = DownloadInfo.Status.STARTED;
-                message.obj = task;
-                handler.sendMessage(message);
-            }
+        boolean isRestart = tempSize != 0;
+        if (handler != null) {
+            Message message = Message.obtain();
+            message.what = DOWN_START;
+            downloadStatus = DownloadInfo.Status.STARTED;
+            handler.sendMessage(message);
         }
         Log.v("--------msg v2", " ------ isRestart = " + isRestart);
 
-        long curSize = task.tempSize;
+        long curSize = tempSize;
         HttpURLConnection connection = null;
         InputStream in = null;
         RandomAccessFile out = null;
         try {
-            URL url = new URL(task.url);
+            URL url = new URL(downloadUrl);
             connection = (HttpURLConnection) url.openConnection();
             connection.setRequestMethod("GET");
             connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.111 Safari/537.36");
@@ -156,14 +163,14 @@ public class DownloadRunnable implements Runnable{
 
             connection.setInstanceFollowRedirects(true);// 设置重定向问题
             connection.setConnectTimeout(20000);
-            if (task.tempSize > 0) // 检测临时文件的大小
+            if (tempSize > 0) // 检测临时文件的大小
             {
                 // 如果本地緩存文件被清除,则重新下载
-                if (task.tempSize > 0 && task.tempSize < task.totalSize) {
-                    String range = String.format("bytes=%d-%d", curSize, task.totalSize - 1);
+                if (tempSize > 0 && tempSize < totalSize) {
+                    String range = String.format("bytes=%d-%d", curSize, totalSize - 1);
                     connection.setRequestProperty("Range", range);
                 } else {
-                    task.tempSize = 0;
+                    tempSize = 0;
                 }
             }
             int status = connection.getResponseCode();
@@ -177,21 +184,18 @@ public class DownloadRunnable implements Runnable{
                     filelen = filerange;
                 }
 
-                // 下载成功一次就重置重试次数
-                task.retryCount = 0;
-
                 long file_len = 0;
                 try {
                     file_len = Long.valueOf(filelen);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                if (task.tempSize > 0) {
-                    if (file_len != task.totalSize) {
+                if (tempSize > 0) {
+                    if (file_len != totalSize) {
                         throw new Exception("file size error!try!");
                     }
                 } else {
-                    task.totalSize = file_len;
+                    totalSize = file_len;
                 }
             } else if (HttpURLConnection.HTTP_MOVED_PERM == status || HttpURLConnection.HTTP_SEE_OTHER == status || HttpURLConnection.HTTP_MOVED_TEMP == status) {
                 throw new Exception("download url change!");
@@ -200,26 +204,26 @@ public class DownloadRunnable implements Runnable{
             }
 
             // 获取文件名称
-            if (TextUtils.isEmpty(task.name)) {
+            if (TextUtils.isEmpty(name)) {
                 String connUrl = connection.getURL().toString();
-                task.name = URLDecoder.decode(connUrl.substring(connUrl.lastIndexOf("/") + 1), "utf-8");
-                task.name = task.name.substring(task.name.lastIndexOf("/") + 1);
+                name = URLDecoder.decode(connUrl.substring(connUrl.lastIndexOf("/") + 1), "utf-8");
+                name = name.substring(name.lastIndexOf("/") + 1);
             }
             // 创建下载目录
-            if (TextUtils.isEmpty(task.path)) {
+            if (TextUtils.isEmpty(savePath)) {
                 // 更新apk下载目录
                 String path = getDiskCachePath();
                 if (TextUtils.isEmpty(path)) {
                     return 0;
                 }
 
-                task.path = path + "/" + DOWNLOAD_APK_PATH;
-                Log.d("-------msg", "保存的地址是   " + task.path);
-            } else if (!new File(task.path).canWrite()) {
+                savePath = path + "/" + DOWNLOAD_APK_PATH;
+                Log.d("-------msg", "保存的地址是   " + path);
+            } else if (!new File(savePath).canWrite()) {
                 return 0;
             }
 
-            File dlPath = new File(task.path);
+            File dlPath = new File(savePath);
             // 文件不存在，并且文件夹创建失败
             if (!dlPath.exists() && !dlPath.mkdirs())
                 return 0;
@@ -230,19 +234,19 @@ public class DownloadRunnable implements Runnable{
                 if (childFiles != null && childFiles.length > 0) {
                     int size = childFiles.length;
                     for (int i = 0; i < size; i++) {
-                        if (task.name.equals(childFiles[i].getName())) {
+                        if (name.equals(childFiles[i].getName())) {
                             childFiles[i].delete();
                         }
                     }
                 }
             }
 
-            File file = DownloadUtils.getTempDownloadPath(task);
+            File file = DownloadUtils.getTempDownloadPath(savePath, name);
             Log.v("---------msg", " ----- download save   getTempDownloadPath.length()  = " + file.length() + " ---- path = " + file.getAbsolutePath());
             if (file != null && file.length() <= 0) {
                 Log.e("---------msg", " ----- download save   被清空了进度， 需要重新下载  = ");
-                task.tempSize = 0;
-                task.progress = 0;
+                tempSize = 0;
+                progress = 0;
                 curSize = 0;
             }
             int nread;
@@ -251,34 +255,36 @@ public class DownloadRunnable implements Runnable{
             out = new RandomAccessFile(file, "rw"); // 用来访问那些保存数据记录的文件的，你就可以用seek
             out.seek(curSize); // 方法来访问记录
             try {
-                while (task.isRunning && (nread = in.read(buffer, 0, buffer.length)) > 0) {
+                Log.v("--------msg", "正在下载， -----------  222222222222  检测task的状态 ---  isRunning " + isRunning);
+                while (isRunning && (nread = in.read(buffer, 0, buffer.length)) > 0) {
                     out.write(buffer, 0, nread);
                     // 设置临时文件长度
                     curSize += nread;
-                    task.tempSize = curSize;
+                    tempSize = curSize;
 
                     long l = 0;
-                    if (task.totalSize > 0) {
-                        l = curSize * 100 / task.totalSize;
+                    if (totalSize > 0) {
+                        l = curSize * 100 / totalSize;
                     }
                     if (updateCount == 0 || (l - down_step) >= updateCount) {
                         updateCount += down_step;
-                        if (updateCount > task.progress) {
-                            task.progress = updateCount;
-//                            handleDownloadProgressUpdate(task.url, updateCount);
-                            Log.v("-------msg", "handler = " + handler +" ------ progress = " + updateCount );
+                        if (updateCount > progress) {
+                            progress = updateCount;
+//                            handleDownloadProgressUpdate(url, updateCount);
+                            Log.v("-------msg", "handler = " + handler + " ------ progress = " + updateCount);
                             if (handler != null) {
                                 Message message = Message.obtain();
                                 message.what = DOWNLOAD_ING;
-                                task.status = DownloadInfo.Status.DOWNLOADING;
-                                message.obj = task;
+                                message.arg1 = (int) totalSize;
+                                message.arg2 = progress;
+                                downloadStatus = DownloadInfo.Status.DOWNLOADING;
                                 handler.sendMessage(message);
                             }
                         }
                     }
                     if (System.currentTimeMillis() - mUpDateTimerMillis > 1000) {
                         downloadSpeed = (curSize - speedTemp) * 1000 / (System.currentTimeMillis() - mUpDateTimerMillis);  //计算下载速度
-                        task.speed = downloadSpeed;         //下载速度赋值
+                        speed = downloadSpeed;         //下载速度赋值
                         speedTemp = curSize;
                         mUpDateTimerMillis = System.currentTimeMillis();
                     }
@@ -287,31 +293,31 @@ public class DownloadRunnable implements Runnable{
                 return -1;
             }
 
-            if (!task.isRunning) {
-                if (task.status != DownloadInfo.Status.DELETE) {
-                    task.status = 0;
+            if (!isRunning) {
+                if (downloadStatus != DownloadInfo.Status.DELETE) {
+                    downloadStatus = 0;
                 }
                 return Integer.MAX_VALUE;
             }
             // 如果下载完成
-            if (task.totalSize == task.tempSize || task.totalSize == 0) {
-                if (!TextUtils.isEmpty(task.name) && (task.name.endsWith(".apk") || task.name.endsWith(".APK"))) {
-                    file.renameTo(new File(task.path, task.name));
+            if (totalSize == tempSize || totalSize == 0) {
+                if (!TextUtils.isEmpty(name) && (name.endsWith(".apk") || name.endsWith(".APK"))) {
+                    file.renameTo(new File(savePath, name));
                 } else {
-                    file.renameTo(new File(task.path, task.name + ".apk"));
+                    file.renameTo(new File(savePath, name + ".apk"));
                 }
                 Log.e("---------msg", " ---- 下载完成 file ------ " + file.getPath());
-                downloadedLength = task.tempSize;
-                task.isRunning = false;
+                downloadedLength = tempSize;
+                isRunning = false;
             } else {
-                task.tempSize = 0;
-                task.totalSize = 0;
-                task.isRunning = false;
+                tempSize = 0;
+                totalSize = 0;
+                isRunning = false;
                 File[] childFiles = dlPath.listFiles();
                 if (childFiles != null && childFiles.length > 0) {
                     int size = childFiles.length;
                     for (int i = 0; i < size; i++) {
-                        String filenames = task.name + ".temp";
+                        String filenames = name + ".temp";
                         if (filenames.equals(childFiles[i].getName())) {
                             childFiles[i].delete();
                         }
@@ -345,7 +351,7 @@ public class DownloadRunnable implements Runnable{
 
     @Nullable
     public String getDiskCachePath() {
-        if (weakContext == null|| weakContext.get() == null) {
+        if (weakContext == null || weakContext.get() == null) {
             return null;
         }
         Context context = weakContext.get();

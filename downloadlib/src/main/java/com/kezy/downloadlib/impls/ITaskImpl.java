@@ -11,8 +11,8 @@ import com.kezy.downloadlib.bean.DownloadInfo;
  */
 public interface ITaskImpl {
 
-    DownloadInfo getInfo();
 
+    DownloadInfo getInfo();
     // 下载的key
     String createDownloadKey();
 

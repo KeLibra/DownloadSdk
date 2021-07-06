@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.e("-----------msg", "  -==== 1111 " + task.getStatus());
 //                Log.e("-----------msg", "  -====  22222 " + task1.getStatus());
 
-                DownloadUtils.installApk(MainActivity.this, task.getInfo().getSavePath());
+               task.install(MainActivity.this);
             }
         });
 

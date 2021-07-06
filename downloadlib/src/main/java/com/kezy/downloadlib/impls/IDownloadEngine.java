@@ -11,25 +11,19 @@ import com.kezy.downloadlib.bean.DownloadInfo;
  */
 public interface IDownloadEngine {
 
-    void bindDownloadInfo(DownloadInfo info);
-
-    DownloadInfo getInfo();
-
     void bindStatusListener(IDownloadStatusListener listener);
 
     // 开始下载
-    void startDownload(Context context);
+    void startDownload(Context context, String url, String onlyKey);
 
     //暂停下载
-    void pauseDownload(Context context);
+    void pauseDownload(Context context, String onlyKey);
 
     // 继续下载
-    void continueDownload(Context context);
+    void continueDownload(Context context,String onlyKey);
 
     // 删除下载
-    void deleteDownload(Context context);
-
-    void installApk(Context context);
+    void deleteDownload(Context context, String onlyKey);
 
     void destroy();
 }
