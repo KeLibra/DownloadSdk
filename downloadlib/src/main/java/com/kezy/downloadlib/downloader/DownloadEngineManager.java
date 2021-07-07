@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class DownloadEngineManager implements IDownloadEngine {
 
-    private static final String TAG = "--------msg_d_m";
+    private static final String TAG = "--------DownloadEngineManager";
     private boolean mConnected = false;
 
     private Context mContext;

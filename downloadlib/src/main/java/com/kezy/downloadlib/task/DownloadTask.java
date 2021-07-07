@@ -125,14 +125,6 @@ public class DownloadTask implements ITaskImpl {
                 }
 
                 @Override
-                public void onContinue(String onlyKey) {
-                    mInfo.status = DownloadInfo.Status.DOWNLOADING;
-                    if (taskListener != null) {
-                        taskListener.onContinue(mInfo.onlyKey());
-                    }
-                }
-
-                @Override
                 public void onRemove(String onlyKey) {
                     mInfo.status = DownloadInfo.Status.DELETE;
                     if (taskListener != null) {

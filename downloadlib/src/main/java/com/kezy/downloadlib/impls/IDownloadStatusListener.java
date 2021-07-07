@@ -9,7 +9,6 @@ public interface IDownloadStatusListener {
 
     void onStart(String onlyKey, boolean isRestart, long totalSize);
     void onPause(String onlyKey);
-    void onContinue(String onlyKey);
     void onRemove(String onlyKey);
     void onProgress(String onlyKey,long totalSize, int progress);
     void onError(String onlyKey);

@@ -31,7 +31,7 @@ import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_URL;
 /**
  * @Author Kezy
  * @Time 2021/6/22
- * @Description
+ * @Description 专门用来下载的服务
  */
 public class DownloadService extends Service {
 
@@ -39,7 +39,7 @@ public class DownloadService extends Service {
     private Binder mBinder;
 
 
-    public ExecutorService threadPool;
+    public ExecutorService threadPool; // 下载线程池
 
     @Nullable
     @Override
