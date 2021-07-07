@@ -29,15 +29,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class DownloadEngineManager implements IDownloadEngine {
 
 
-    public interface RunnableStatus {
-        int STARTED = 1;     //开始
-        int DOWNLOADING = 2; // 正在下载
-        int FINISHED = 3;    //完成
-        int STOPPED = 4;     //暂停
-        int ERROR = 5;       //错误
-        int DELETE = 6;      // 删除
-    }
-
 
     private static final String TAG = "DownloadEngineManager";
     private boolean mConnected = false;
@@ -99,12 +90,12 @@ public class DownloadEngineManager implements IDownloadEngine {
         if (!onlyKeyRunnableMap.containsKey(onlyKey)) {
             DownloadRunnable runnable = new DownloadRunnable(context, downloadUrl, new StatusChangeHandler(onlyKey));
             runnable.isRunning = true;
-            runnable.downloadStatus = RunnableStatus.STARTED;
+            runnable.downloadStatus = DOWN_START;
             onlyKeyRunnableMap.put(onlyKey, runnable);
 
         } else {
             onlyKeyRunnableMap.get(onlyKey).isRunning = true;
-            onlyKeyRunnableMap.get(onlyKey).downloadStatus = RunnableStatus.DOWNLOADING;
+            onlyKeyRunnableMap.get(onlyKey).downloadStatus = DOWNLOAD_ING;
         }
 
         mDownloadService.threadPool.submit(onlyKeyRunnableMap.get(onlyKey));
@@ -171,7 +162,7 @@ public class DownloadEngineManager implements IDownloadEngine {
             return;
         }
         onlyKeyRunnableMap.get(onlyKey).isRunning = false;
-        onlyKeyRunnableMap.get(onlyKey).downloadStatus = RunnableStatus.STOPPED;
+        onlyKeyRunnableMap.get(onlyKey).downloadStatus = HANDLER_PAUSE;
     }
 
     @Override
@@ -183,7 +174,7 @@ public class DownloadEngineManager implements IDownloadEngine {
     @Override
     public void deleteDownload(Context context, String onlyKey) {
 
-        onlyKeyRunnableMap.get(onlyKey).downloadStatus = RunnableStatus.DELETE;
+        onlyKeyRunnableMap.get(onlyKey).downloadStatus = HANDLER_REMOVE;
         onlyKeyRunnableMap.get(onlyKey).isRunning = false;
         String filePath = onlyKeyRunnableMap.get(onlyKey).savePath;
         if (filePath != null && new File(filePath).exists()) {
@@ -241,15 +232,13 @@ public class DownloadEngineManager implements IDownloadEngine {
     }
 
 
-
-
-    public static final int DOWN_OK = 1001;
-    public static final int DOWN_ERROR = 1002;
-    public static final int DOWN_START = 1003;
-    public static final int DOWNLOAD_ING = 1004;
-    public static final int REQUEST_TIME_OUT = 1005;
-    public static final int HANDLER_PAUSE = 1006;
-    public static final int HANDLER_REMOVE = 1007;
+    public static final int DOWN_OK = 1001;   //完成
+    public static final int DOWN_ERROR = 1002; //错误
+    public static final int DOWN_START = 1003; //开始
+    public static final int DOWNLOAD_ING = 1004; // 正在下载
+    public static final int REQUEST_TIME_OUT = 1005; //错误2
+    public static final int HANDLER_PAUSE = 1006;  //暂停
+    public static final int HANDLER_REMOVE = 1007; // 删除
 
     public class StatusChangeHandler extends Handler {
 

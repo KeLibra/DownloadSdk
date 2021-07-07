@@ -41,7 +41,7 @@ public class DownloadService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        Log.e("---------msg", " --------- onCreate");
+        Log.e(TAG, " --------- onCreate");
         mBinder = new Binder();
         threadPool = Executors.newFixedThreadPool(5);
     }
