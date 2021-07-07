@@ -1,32 +1,16 @@
 package com.kezy.downloadlib.downloader;
 
 import android.app.Service;
-import android.content.Context;
 import android.content.Intent;
-import android.os.Handler;
 import android.os.IBinder;
-import android.os.Message;
-import android.text.TextUtils;
 import android.util.Log;
 
-import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 
-import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.common.DownloadUtils;
-import com.kezy.downloadlib.impls.IDownloadStatusListener;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_AD_ID;
-import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_NAME;
-import static com.kezy.downloadlib.common.DownloadConstants.DOWNLOAD_APK_URL;
 
 /**
  * @Author Kezy

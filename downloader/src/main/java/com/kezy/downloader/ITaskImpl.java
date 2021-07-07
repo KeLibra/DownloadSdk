@@ -1,8 +1,9 @@
-package com.kezy.downloadlib.impls;
+package com.kezy.downloader;
 
 import android.content.Context;
 
-import com.kezy.downloadlib.bean.DownloadInfo;
+import com.kezy.downloader.bean.DownloadInfo;
+import com.kezy.downloadlib.impls.IDownloadTaskListener;
 
 /**
  * @Author Kezy

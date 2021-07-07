@@ -1,19 +1,19 @@
-package com.kezy.downloadlib.task;
+package com.kezy.downloader.task;
 
 import android.app.NotificationManager;
 import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
-import com.kezy.downloadlib.bean.DownloadInfo;
+import com.kezy.downloader.IInstallListener;
+import com.kezy.downloader.ITaskImpl;
+import com.kezy.downloader.bean.DownloadInfo;
+import com.kezy.downloader.receiver.InstallApkReceiver;
 import com.kezy.downloadlib.common.DownloadUtils;
-import com.kezy.downloadlib.receiver.InstallApkReceiver;
 import com.kezy.downloadlib.downloader.DownloadEngineManager;
 import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
 import com.kezy.downloadlib.impls.IDownloadTaskListener;
-import com.kezy.downloadlib.impls.IInstallListener;
-import com.kezy.downloadlib.impls.ITaskImpl;
 import com.kezy.noticelib.NotificationsManager;
 
 

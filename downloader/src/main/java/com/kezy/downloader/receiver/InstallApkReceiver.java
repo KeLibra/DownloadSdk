@@ -1,4 +1,4 @@
-package com.kezy.downloadlib.receiver;
+package com.kezy.downloader.receiver;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -6,7 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.util.Log;
 
-import com.kezy.downloadlib.impls.IInstallListener;
+import com.kezy.downloader.IInstallListener;
 
 /**
  * @Author Kezy

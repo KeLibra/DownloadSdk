@@ -9,7 +9,6 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
-import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.common.DownloadUtils;
 
 import java.io.BufferedInputStream;
@@ -85,22 +84,22 @@ public class DownloadRunnable implements Runnable {
 
             if (downloadSize == Integer.MAX_VALUE) {
                 message = Message.obtain();
-                if (downloadStatus == DownloadInfo.Status.DELETE) {
+                if (downloadStatus == DownloadEngineManager.RunnableStatus.DELETE) {
                     message.what = HANDLER_REMOVE;
                 } else {
                     message.what = HANDLER_PAUSE;
-                    downloadStatus = DownloadInfo.Status.STOPPED;
+                    downloadStatus = DownloadEngineManager.RunnableStatus.STOPPED;
                 }
 
             } else if (downloadSize > 0) {
                 // 下载成功
                 message = Message.obtain();
                 message.what = DOWN_OK;
-                downloadStatus = DownloadInfo.Status.FINISHED;
+                downloadStatus = DownloadEngineManager.RunnableStatus.FINISHED;
 
                 Log.e("----------msg", " ------- 下载完成 ---- downloadSize " + downloadSize);
             } else {
-                downloadStatus = DownloadInfo.Status.ERROR;
+                downloadStatus = DownloadEngineManager.RunnableStatus.ERROR;
                 message = Message.obtain();
                 message.what = DOWN_ERROR;
                 Log.d("mydownload", "downloadCoutn" + downloadSize);
@@ -108,11 +107,11 @@ public class DownloadRunnable implements Runnable {
         } catch (SocketTimeoutException e) {
             message = Message.obtain();
             message.what = REQUEST_TIME_OUT;
-            downloadStatus = DownloadInfo.Status.ERROR;
+            downloadStatus = DownloadEngineManager.RunnableStatus.ERROR;
         } catch (IOException e) {
             message = Message.obtain();
             message.what = DOWN_ERROR;
-            downloadStatus = DownloadInfo.Status.ERROR;
+            downloadStatus = DownloadEngineManager.RunnableStatus.ERROR;
         } finally {
             Log.d("-----msg mydownload"," --- :finally -- " + (message == null ? "null" : message.what));
             handler.sendMessage(message);
@@ -139,13 +138,13 @@ public class DownloadRunnable implements Runnable {
             return Integer.MAX_VALUE;
         }
 
-        downloadStatus = DownloadInfo.Status.DOWNLOADING;
+        downloadStatus = DownloadEngineManager.RunnableStatus.DOWNLOADING;
 
         boolean isRestart = tempSize != 0;
         if (handler != null) {
             Message message = Message.obtain();
             message.what = DOWN_START;
-            downloadStatus = DownloadInfo.Status.STARTED;
+            downloadStatus = DownloadEngineManager.RunnableStatus.STARTED;
             handler.sendMessage(message);
         }
         Log.v("--------msg v2", " ------ isRestart = " + isRestart);
@@ -279,7 +278,7 @@ public class DownloadRunnable implements Runnable {
                                 message.what = DOWNLOAD_ING;
                                 message.arg1 = (int) totalSize;
                                 message.arg2 = progress;
-                                downloadStatus = DownloadInfo.Status.DOWNLOADING;
+                                downloadStatus = DownloadEngineManager.RunnableStatus.DOWNLOADING;
                                 handler.sendMessage(message);
                             }
                         }
@@ -296,7 +295,7 @@ public class DownloadRunnable implements Runnable {
             }
 
             if (!isRunning) {
-                if (downloadStatus != DownloadInfo.Status.DELETE) {
+                if (downloadStatus != DownloadEngineManager.RunnableStatus.DELETE) {
                     downloadStatus = 0;
                 }
                 return Integer.MAX_VALUE;

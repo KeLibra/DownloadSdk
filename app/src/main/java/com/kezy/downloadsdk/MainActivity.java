@@ -11,11 +11,11 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import com.kezy.downloadlib.bean.DownloadInfo;
+import com.kezy.downloader.ITaskImpl;
+import com.kezy.downloader.bean.DownloadInfo;
+import com.kezy.downloader.task.DownloadTaskManager;
 import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadTaskListener;
-import com.kezy.downloadlib.impls.ITaskImpl;
-import com.kezy.downloadlib.task.DownloadTaskManager;
 import com.kezy.noticelib.NotificationChannels;
 
 public class MainActivity extends AppCompatActivity {
@@ -114,11 +114,6 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPause(String onlyKey) {
                 btnDownload.setText("继续");
-            }
-
-            @Override
-            public void onContinue(String onlyKey) {
-                btnDownload.setText("下载中...");
             }
 
             @Override

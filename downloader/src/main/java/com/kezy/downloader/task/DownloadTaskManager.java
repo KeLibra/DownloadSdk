@@ -1,15 +1,15 @@
-package com.kezy.downloadlib.task;
+package com.kezy.downloader.task;
 
 import android.content.Context;
 import android.util.Log;
 
-
-import com.kezy.downloadlib.bean.DownloadInfo;
-import com.kezy.downloadlib.receiver.InstallApkReceiver;
-import com.kezy.downloadlib.impls.ITaskImpl;
+import com.kezy.downloader.ITaskImpl;
+import com.kezy.downloader.bean.DownloadInfo;
+import com.kezy.downloader.receiver.InstallApkReceiver;
 
 import java.util.HashMap;
 import java.util.Map;
+
 
 /**
  * @Author Kezy

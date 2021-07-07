@@ -2,3 +2,4 @@ rootProject.name = "DownloadSdk"
 include ':app'
 include ':downloadlib'
 include ':noticelib'
+include ':downloader'

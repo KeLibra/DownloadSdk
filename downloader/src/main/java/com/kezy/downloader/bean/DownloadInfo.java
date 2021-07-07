@@ -1,4 +1,4 @@
-package com.kezy.downloadlib.bean;
+package com.kezy.downloader.bean;
 
 import android.os.Parcel;
 import android.os.Parcelable;

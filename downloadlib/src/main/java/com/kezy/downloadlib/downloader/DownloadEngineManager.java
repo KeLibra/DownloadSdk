@@ -12,7 +12,6 @@ import android.util.Log;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.kezy.downloadlib.bean.DownloadInfo;
 import com.kezy.downloadlib.common.DownloadUtils;
 import com.kezy.downloadlib.impls.IDownloadEngine;
 import com.kezy.downloadlib.impls.IDownloadStatusListener;
@@ -29,7 +28,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class DownloadEngineManager implements IDownloadEngine {
 
-    private static final String TAG = "--------DownloadEngineManager";
+
+    public interface RunnableStatus {
+        int STARTED = 1;     //开始
+        int DOWNLOADING = 2; // 正在下载
+        int FINISHED = 3;    //完成
+        int STOPPED = 4;     //暂停
+        int ERROR = 5;       //错误
+        int DELETE = 6;      // 删除
+    }
+
+
+    private static final String TAG = "DownloadEngineManager";
     private boolean mConnected = false;
 
     private Context mContext;
@@ -89,12 +99,12 @@ public class DownloadEngineManager implements IDownloadEngine {
         if (!onlyKeyRunnableMap.containsKey(onlyKey)) {
             DownloadRunnable runnable = new DownloadRunnable(context, downloadUrl, new StatusChangeHandler(onlyKey));
             runnable.isRunning = true;
-            runnable.downloadStatus = DownloadInfo.Status.STARTED;
+            runnable.downloadStatus = RunnableStatus.STARTED;
             onlyKeyRunnableMap.put(onlyKey, runnable);
 
         } else {
             onlyKeyRunnableMap.get(onlyKey).isRunning = true;
-            onlyKeyRunnableMap.get(onlyKey).downloadStatus = DownloadInfo.Status.DOWNLOADING;
+            onlyKeyRunnableMap.get(onlyKey).downloadStatus = RunnableStatus.DOWNLOADING;
         }
 
         mDownloadService.threadPool.submit(onlyKeyRunnableMap.get(onlyKey));
@@ -161,7 +171,7 @@ public class DownloadEngineManager implements IDownloadEngine {
             return;
         }
         onlyKeyRunnableMap.get(onlyKey).isRunning = false;
-        onlyKeyRunnableMap.get(onlyKey).downloadStatus = DownloadInfo.Status.STOPPED;
+        onlyKeyRunnableMap.get(onlyKey).downloadStatus = RunnableStatus.STOPPED;
     }
 
     @Override
@@ -173,7 +183,7 @@ public class DownloadEngineManager implements IDownloadEngine {
     @Override
     public void deleteDownload(Context context, String onlyKey) {
 
-        onlyKeyRunnableMap.get(onlyKey).downloadStatus = DownloadInfo.Status.DELETE;
+        onlyKeyRunnableMap.get(onlyKey).downloadStatus = RunnableStatus.DELETE;
         onlyKeyRunnableMap.get(onlyKey).isRunning = false;
         String filePath = onlyKeyRunnableMap.get(onlyKey).savePath;
         if (filePath != null && new File(filePath).exists()) {
